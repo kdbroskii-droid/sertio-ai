@@ -1,0 +1,55 @@
+name: Build Nova Studio AI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Add native platform scaffolding
+        run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-studio-ai-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  windows:
+    name: Windows desktop
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Add native platform scaffolding
+        run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build windows --release
+      - name: Package Windows release
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath nova-studio-ai-windows.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-studio-ai-windows
+          path: nova-studio-ai-windows.zip
+          if-no-files-found: error
