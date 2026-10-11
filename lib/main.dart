@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'three_d_generator.dart';
 import 'nova_universal_interpreter.dart';
+import 'nova_command_language.dart';
 
 const blue = Color(0xFF4F8CFF);
 const bg = Color(0xFF0B0D12);
