@@ -27,6 +27,18 @@ void main() {
       }
     });
 
+    test('decodes a space-separated chain as distinct ordered tasks', () {
+      final mesh = NovaCommand.fromExplicitRequest(
+        kind: NovaCommandKind.mesh, activeEngine: 'Roblox', task: 'shop model');
+      final script = NovaCommand.fromExplicitRequest(
+        kind: NovaCommandKind.lua, activeEngine: 'Roblox', task: 'shop interaction');
+      final chain = mesh.encode() + ' ' + script.encode();
+      final decoded = NovaCommand.decodeChain(chain);
+      expect(decoded, hasLength(2));
+      expect(decoded[0].kind, NovaCommandKind.mesh);
+      expect(decoded[1].kind, NovaCommandKind.lua);
+    });
+
     test('recognizes two-character C++ prefix before single-character prefixes', () {
       final parsed = NovaCommandKind.parseRequest('  *) make a movement component');
       expect(parsed?.kind, NovaCommandKind.cpp);
