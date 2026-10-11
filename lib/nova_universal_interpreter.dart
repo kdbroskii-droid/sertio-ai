@@ -110,7 +110,16 @@ User request: $userPrompt
       final task = (raw['task'] ?? userPrompt).toString().trim();
       if (task.isEmpty) continue;
       final actionName = (raw['action'] ?? 'create').toString();
-      final actionId = NovaCommandRegistry.action(actionName);
+      final fallbackAction = switch (kind) {
+        NovaCommandKind.mesh => 13,
+        NovaCommandKind.lua || NovaCommandKind.cpp => 14,
+        NovaCommandKind.explain => 4,
+        NovaCommandKind.debug => 6,
+        _ => 15,
+      };
+      final actionId = actionName == 'create' || !NovaCommandRegistry.actions.containsKey(actionName)
+          ? fallbackAction
+          : NovaCommandRegistry.action(actionName);
       final engine = activeEngine.toLowerCase();
       final inferredTarget = switch (kind) {
         NovaCommandKind.mesh => engine == 'roblox' ? 'roblox_model_rbxmx' : 'mesh_obj',
