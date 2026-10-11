@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'three_d_generator.dart';
 
 const blue = Color(0xFF4F8CFF);
 const bg = Color(0xFF0B0D12);
@@ -293,6 +294,20 @@ class _StudioHomeState extends State<StudioHome> {
     } catch (e) { _toast('Import failed: $e'); }
   }
 
+  void _addGeneratedAsset(String name, String obj) {
+    final p = project;
+    if (p == null) { _toast('Create a project first.'); return; }
+    final safe = name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final path = 'Assets/Generated/' + safe + '.obj';
+    setState(() {
+      undoStack.add(Map<String, String>.from(p.files));
+      p.files[path] = obj;
+      selectedFile = path;
+      page = 'Studio';
+    });
+    _toast('Added 3D model to project: ' + path);
+  }
+
   void _checks() {
     final p = project;
     if (p == null) return;
@@ -321,7 +336,7 @@ class _StudioHomeState extends State<StudioHome> {
             const Text('Local AI', style: TextStyle(color: muted, fontSize: 12)),
             IconButton(onPressed: _settings, icon: const Icon(Icons.tune)),
           ])),
-          Expanded(child: page == 'Assets' ? _assetsPage() : page == 'Tests' ? _testsPage() : page == 'Settings' ? _settingsPage() : _studioPage(wide)),
+          Expanded(child: page == '3D Generator' ? ThreeDGeneratorPage(onAddToProject: _addGeneratedAsset) : page == 'Assets' ? _assetsPage() : page == 'Tests' ? _testsPage() : page == 'Settings' ? _settingsPage() : _studioPage(wide)),
           if (!wide) _bottomNav(),
         ])),
       ])),
@@ -337,6 +352,7 @@ class _StudioHomeState extends State<StudioHome> {
       _nav(Icons.add, 'New project', _newProject),
       _nav(Icons.code, 'Studio', () => setState(() => page = 'Studio')),
       _nav(Icons.view_in_ar, 'Assets', () => setState(() => page = 'Assets')),
+      _nav(Icons.view_in_ar_outlined, '3D Generator', () => setState(() => page = '3D Generator')),
       _nav(Icons.fact_check_outlined, 'Tests', _checks),
       _nav(Icons.folder_open, 'Import ZIP', _import),
       _nav(Icons.archive_outlined, 'Export ZIP', _export),
@@ -356,6 +372,7 @@ class _StudioHomeState extends State<StudioHome> {
   Widget _bottomNav() => Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
     IconButton(onPressed: () => setState(() => page = 'Studio'), icon: Icon(Icons.code, color: page == 'Studio' ? blue : muted)),
     IconButton(onPressed: () => setState(() => page = 'Assets'), icon: Icon(Icons.view_in_ar, color: page == 'Assets' ? blue : muted)),
+    IconButton(onPressed: () => setState(() => page = '3D Generator'), icon: Icon(Icons.view_in_ar_outlined, color: page == '3D Generator' ? blue : muted)),
     IconButton(onPressed: _checks, icon: Icon(Icons.fact_check_outlined, color: page == 'Tests' ? blue : muted)),
     IconButton(onPressed: _settings, icon: const Icon(Icons.settings_outlined, color: muted)),
   ]);
@@ -451,6 +468,8 @@ class _StudioHomeState extends State<StudioHome> {
     const SizedBox(height: 8),
     const Text('Plan characters, fictional game items, environments, materials, vehicles, creatures, rigs and animations. Full mesh and texture generation needs dedicated model integrations.', style: TextStyle(color: muted, height: 1.5)),
     const SizedBox(height: 12),
+    Card(color: panel, child: ListTile(leading: const Icon(Icons.view_in_ar, color: blue), title: const Text('Open 3D Generator'), subtitle: const Text('Build a low-poly mesh and export OBJ'), trailing: const Icon(Icons.arrow_forward_ios, size: 14), onTap: () => setState(() => page = '3D Generator'))),
+    const SizedBox(height: 8),
     ...['Characters', 'Fictional game items', 'Buildings and environments', 'Textures and materials', 'Vehicles', 'Creatures', 'Animations and rigs'].map((name) => Card(color: panel, child: ListTile(
       leading: const Icon(Icons.view_in_ar, color: blue), title: Text(name), trailing: const Icon(Icons.arrow_forward_ios, size: 14),
       onTap: () { setState(() => page = 'Studio'); prompt.text = 'Plan ' + name.toLowerCase() + ' for my ' + engine + ' game and suggest required project files.'; },
