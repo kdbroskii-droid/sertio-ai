@@ -61,9 +61,9 @@ class _Mesh {
     faces.add(_Face(List.generate(segments,(i)=>b+segments+i)));
   }
 
-  void house() {
-    box(0,-.12,0,1.6,1.2,1.3); final b=vertices.length;
-    vertices.addAll([_V3(-.95,.48,-.78),_V3(.95,.48,-.78),_V3(0,1.25,-.78),_V3(-.95,.48,.78),_V3(.95,.48,.78),_V3(0,1.25,.78)]);
+  void house(double scale) {
+    box(0,-.12*scale,0,1.6*scale,1.2*scale,1.3*scale); final b=vertices.length;
+    vertices.addAll([_V3(-.95*scale,.48*scale,-.78*scale),_V3(.95*scale,.48*scale,-.78*scale),_V3(0,1.25*scale,-.78*scale),_V3(-.95*scale,.48*scale,.78*scale),_V3(.95*scale,.48*scale,.78*scale),_V3(0,1.25*scale,.78*scale)]);
     for(final f in [[0,1,2],[3,5,4],[0,3,4,1],[0,2,5,3],[1,4,5,2]]) faces.add(_Face(f.map((i)=>b+i).toList()));
   }
 
@@ -71,7 +71,7 @@ class _Mesh {
     if(type=='Cube') box(0,0,0,size,size,size);
     else if(type=='Sphere') sphere(size/2,detail);
     else if(type=='Tree'){box(0,-size*.1,0,size*.13,size*.7,size*.13);cone(size*.34,size*.68,detail,cy:size*.28);cone(size*.27,size*.58,detail,cy:size*.57);}
-    else if(type=='House'){house();}
+    else if(type=='House'){house(size/2);}
     else if(type=='Sword'){box(0,size*.28,0,size*.12,size*.62,size*.08);box(0,-size*.08,0,size*.42,size*.07,size*.13);box(0,-size*.31,0,size*.11,size*.36,size*.11);box(0,-size*.51,0,size*.19,size*.07,size*.17);}
     else if(type=='Barrel'){cylinder(size*.32,size*.8,detail);}
     else box(0,0,0,size,size,size);
