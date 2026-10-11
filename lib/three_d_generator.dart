@@ -31,7 +31,7 @@ class _Mesh {
   }
 
   void sphere(double radius, int segments) {
-    final rings = math.max(5, segments ~/ 2), b = vertices.length;
+    final rings = math.max(5, segments ~/ 2).toInt(), b = vertices.length;
     for (var r=0;r<=rings;r++) {
       final lat=-math.pi/2+math.pi*r/rings;
       for (var s=0;s<segments;s++) {
@@ -101,7 +101,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
 
   @override void initState(){super.initState();_generate();}
   @override void dispose(){_name.dispose();super.dispose();}
-  void _generate(){final m=_Mesh();m.build(_type,_size,_detail.round().clamp(8,24));setState(()=>_mesh=m);}
+  void _generate(){final m=_Mesh();m.build(_type,_size,_detail.round().clamp(8,24).toInt());setState(()=>_mesh=m);}
 
   Future<void> _export() async {
     _generate();
