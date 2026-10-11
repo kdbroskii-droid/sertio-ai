@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'gemini_command_interpreter.dart';
+import 'nova_ai_config.dart';
 
 const _blue = Color(0xFF4F8CFF);
 const _panel = Color(0xFF131720);
@@ -135,30 +135,19 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
   double _size=2, _detail=12;
   _Mesh _mesh=_Mesh();
   final _request = TextEditingController();
-  final _geminiKey = TextEditingController();
   String _command = '';
   String _interpretation = '';
   bool _interpreting = false;
 
-  @override void initState(){super.initState();_loadGeminiKey();_generate();}
-  @override void dispose(){_name.dispose();_request.dispose();_geminiKey.dispose();super.dispose();}
-
-  Future<void> _loadGeminiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    _geminiKey.text = prefs.getString('nova_gemini_api_key') ?? '';
-  }
+  @override void initState(){super.initState();_generate();}
+  @override void dispose(){_name.dispose();_request.dispose();super.dispose();}
 
   Future<void> _interpretPrompt() async {
     if (_request.text.trim().isEmpty || _interpreting) return;
     setState(() => _interpreting = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = _geminiKey.text.trim().isNotEmpty
-          ? _geminiKey.text.trim()
-          : (prefs.getString('nova_gemini_api_key') ?? '');
-      if (key.isEmpty) throw Exception('Enter your Gemini API key below first.');
-      await prefs.setString('nova_gemini_api_key', key);
+      final key = await NovaAiConfig.getGeminiApiKey();
+      if (key.isEmpty) throw Exception('Add your shared Gemini API key in Nova Settings first.');
       final result = await GeminiCommandInterpreter.interpret(apiKey: key, prompt: _request.text.trim());
       final code = result['command'].toString();
       final decoded = NovaMeshCommand.decode(code.startsWith('#') ? code.substring(1) : code);
@@ -200,7 +189,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       const SizedBox(height:16),
       TextField(controller:_request, minLines:1, maxLines:3, decoration:const InputDecoration(labelText:'Describe a 3D model', hintText:'e.g. make a car wheel')),
       const SizedBox(height:8),
-      TextField(controller:_geminiKey, obscureText:true, decoration:const InputDecoration(labelText:'Gemini API key', hintText:'Stored in app preferences on this device')),
+      const Text('Uses the shared Gemini key configured in Nova Settings.',style:TextStyle(color:_muted,fontSize:12)),
       const SizedBox(height:8),
       FilledButton.icon(onPressed:_interpreting?null:_interpretPrompt, icon:_interpreting?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.translate), label:Text(_interpreting?'Interpreting…':'Interpret prompt with Gemini')),
       if(_command.isNotEmpty) ...[
@@ -231,7 +220,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       const SizedBox(height:8),
       OutlinedButton.icon(onPressed:_export,icon:const Icon(Icons.file_download_outlined),label:const Text('Export .OBJ file')),
       const SizedBox(height:14),
-      const Text('Gemini interprets language only. The numeric command uses fixed fields for version, object, style, size, detail and features; Nova builds the mesh locally. The Gemini key is stored in app preferences and is not encrypted by this prototype. Import OBJ into Blender to convert to FBX or GLB.',style:TextStyle(color:_muted,fontSize:12,height:1.5)),
+      const Text('Gemini interprets language only. The numeric command uses fixed fields for version, object, style, size, detail and features; Nova builds the mesh locally. The shared Gemini key is stored in app preferences and is not encrypted by this prototype. Import OBJ into Blender to convert to FBX or GLB.',style:TextStyle(color:_muted,fontSize:12,height:1.5)),
     ]);
   }
 }
