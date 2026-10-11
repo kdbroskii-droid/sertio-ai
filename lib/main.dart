@@ -3,6 +3,9 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'nova_ai_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'three_d_generator.dart';
@@ -153,6 +156,7 @@ class _StudioHomeState extends State<StudioHome> {
     final ep = TextEditingController(text: endpoint);
     final mo = TextEditingController(text: model);
     final ky = TextEditingController(text: apiKey);
+    final gemini = TextEditingController(text: await NovaAiConfig.getGeminiApiKey());
     await showDialog<void>(context: context, builder: (c) => AlertDialog(
       title: const Text('Local AI settings'),
       content: SizedBox(width: 480, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -160,7 +164,9 @@ class _StudioHomeState extends State<StudioHome> {
         const SizedBox(height: 10),
         TextField(controller: mo, decoration: const InputDecoration(labelText: 'Model name')),
         const SizedBox(height: 10),
-        TextField(controller: ky, obscureText: true, decoration: const InputDecoration(labelText: 'API key (optional)')),
+        TextField(controller: ky, obscureText: true, decoration: const InputDecoration(labelText: 'Local model API key (optional)')),
+        const SizedBox(height: 10),
+        TextField(controller: gemini, obscureText: true, decoration: const InputDecoration(labelText: 'Gemini API key (shared across Nova)', helperText: 'Used by planning, review and the 3D Generator.')),
         const SizedBox(height: 10),
         const Text('On a physical phone, use your PC LAN address if the model runs on your PC.', style: TextStyle(color: muted, fontSize: 12)),
       ]))),
@@ -171,13 +177,113 @@ class _StudioHomeState extends State<StudioHome> {
           await prefs.setString('endpoint', ep.text.trim());
           await prefs.setString('model', mo.text.trim());
           await prefs.setString('key', ky.text);
+          await NovaAiConfig.saveGeminiApiKey(gemini.text.trim());
           if (mounted) setState(() { endpoint = ep.text.trim(); model = mo.text.trim(); apiKey = ky.text; });
           if (c.mounted) Navigator.pop(c);
           _toast('Settings saved locally.');
         }, child: const Text('Save')),
       ],
     ));
-    ep.dispose(); mo.dispose(); ky.dispose();
+    ep.dispose(); mo.dispose(); ky.dispose(); gemini.dispose();
+  }
+
+
+  String _externalAiPrompt() {
+    final p = project;
+    final request = prompt.text.trim().isNotEmpty
+        ? prompt.text.trim()
+        : (messages.where((m) => m.role == 'user').isNotEmpty
+            ? messages.where((m) => m.role == 'user').last.text
+            : 'Help me improve this game project.');
+    return 'You are helping with a Nova Studio AI game project.\n'
+      'Project: \${p?.name ?? 'Untitled'}\nEngine: \${p?.engine ?? engine}\n'
+      'User task: $request\n\n'
+      'Current project files:\n\${p == null ? '(No project)' : _projectContext(p)}\n\n'
+      'Return ONLY valid JSON in this exact format so Nova can import edits: '
+      '{"message":"short summary","files":[{"path":"relative/path","content":"complete file contents"}]}. '
+      'Include only files to create or replace. Use safe relative paths, no ../ or absolute paths. '
+      'For Roblox, use Luau and server-side validation. Do not claim you ran the engine.';
+  }
+
+  Future<void> _launchExternalAi(String provider) async {
+    await Clipboard.setData(ClipboardData(text: _externalAiPrompt()));
+    final uri = Uri.parse(provider == 'ChatGPT' ? 'https://chatgpt.com/' : 'https://claude.ai/new');
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw Exception('Could not open the app link.');
+      if (mounted) _toast('$provider opened. Nova copied the project prompt — paste it into the chat, then return here and choose Paste reply.');
+    } catch (_) {
+      if (mounted) _toast('Prompt copied. Open $provider manually, paste the prompt, then return to Nova and choose Paste reply.');
+    }
+  }
+
+  Future<void> _showAiHandoff() async {
+    if (project == null) { _toast('Create a project first.'); return; }
+    await showModalBottomSheet<void>(
+      context: context, backgroundColor: panel, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Continue with another AI', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            const Text('Nova copies the task and project context. Submit it in the other AI, then bring its reply back here.', style: TextStyle(color: muted)),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: FilledButton.icon(onPressed: () { Navigator.pop(sheetContext); _launchExternalAi('ChatGPT'); }, icon: const Icon(Icons.chat_bubble_outline), label: const Text('ChatGPT'))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton.icon(onPressed: () { Navigator.pop(sheetContext); _launchExternalAi('Claude'); }, icon: const Icon(Icons.auto_awesome), label: const Text('Claude'))),
+            ]),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(onPressed: () { Navigator.pop(sheetContext); _pasteExternalReply(); }, icon: const Icon(Icons.content_paste), label: const Text('Paste reply from clipboard'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44))),
+            const SizedBox(height: 4),
+            const Text('Manual handoff only — Nova cannot read your private chats automatically.', style: TextStyle(color: muted, fontSize: 11)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pasteExternalReply() async {
+    final clip = await Clipboard.getData('text/plain');
+    final controller = TextEditingController(text: clip?.text ?? '');
+    if (controller.text.trim().isEmpty) {
+      _toast('Clipboard is empty. Copy the AI reply first.');
+      controller.dispose();
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Import external AI reply'),
+        content: SizedBox(width: 560, child: TextField(
+          controller: controller, minLines: 8, maxLines: 16,
+          decoration: const InputDecoration(labelText: 'Reply text', alignLabelWithHint: true, border: OutlineInputBorder()),
+        )),
+        actions: [
+          TextButton(onPressed: () async {
+            final latest = await Clipboard.getData('text/plain');
+            if (latest?.text != null) controller.text = latest!.text!;
+          }, child: const Text('Refresh clipboard')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () {
+            final raw = controller.text.trim();
+            if (raw.isEmpty) return;
+            final normalized = _normalizeAiResponse(raw);
+            Navigator.pop(dialogContext);
+            if (normalized != null) {
+              _applyAnswer(normalized);
+              _toast('Imported project-file JSON. Use Undo if needed.');
+            } else {
+              setState(() => messages.add(ChatMessage('assistant',
+                'Reply added as text only because it was not valid Nova project-file JSON. Ask the AI to return the exact JSON format from the prompt, then paste it again.\n\n$raw')));
+              _toast('Reply added as text; project files were not changed.');
+            }
+          }, child: const Text('Import reply')),
+        ],
+      ),
+    );
+    controller.dispose();
   }
 
   bool _safePath(String p) => NovaProjectValidator.isSafeRelativePath(p);
@@ -190,7 +296,7 @@ class _StudioHomeState extends State<StudioHome> {
     setState(() { messages.add(ChatMessage('user', request)); busy = true; });
     try {
       final prefs = await SharedPreferences.getInstance();
-      final geminiKey = prefs.getString('nova_gemini_api_key') ?? '';
+      final geminiKey = await NovaAiConfig.getGeminiApiKey();
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
       List<NovaPlanStep> plan;
@@ -479,7 +585,6 @@ class _StudioHomeState extends State<StudioHome> {
           if (!wide) _bottomNav(),
         ])),
       ])),
-      floatingActionButton: !wide && page == 'Studio' ? FloatingActionButton(onPressed: _newProject, backgroundColor: blue, child: const Icon(Icons.add)) : null,
     );
   });
 
@@ -532,10 +637,21 @@ class _StudioHomeState extends State<StudioHome> {
   Widget _projectHeader(GameProject p) => ListTile(
     leading: const Icon(Icons.videogame_asset_outlined, color: blue),
     title: Text(p.name), subtitle: Text(p.engine, style: const TextStyle(color: muted)),
-    trailing: Wrap(children: [
-      IconButton(onPressed: _undo, tooltip: 'Undo', icon: const Icon(Icons.undo)),
-      IconButton(onPressed: _export, tooltip: 'Export ZIP', icon: const Icon(Icons.archive_outlined)),
-    ]),
+    trailing: PopupMenuButton<String>(
+      tooltip: 'Project actions',
+      onSelected: (action) {
+        if (action == 'new') _newProject();
+        if (action == 'handoff') _showAiHandoff();
+        if (action == 'undo') _undo();
+        if (action == 'export') _export();
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(value: 'new', child: Text('＋  New project')),
+        PopupMenuItem(value: 'handoff', child: Text('ChatGPT / Claude')),
+        PopupMenuItem(value: 'undo', child: Text('Undo')),
+        PopupMenuItem(value: 'export', child: Text('Export ZIP')),
+      ],
+    ),
   );
 
   Widget _fileList(GameProject p) => Column(children: [
@@ -578,6 +694,7 @@ class _StudioHomeState extends State<StudioHome> {
         IconButton.filled(onPressed: busy ? null : _send, icon: const Icon(Icons.arrow_upward), style: IconButton.styleFrom(backgroundColor: blue)),
       ]),
       const SizedBox(height: 5),
+      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : _showAiHandoff, icon: const Icon(Icons.open_in_new, size: 16), label: const Text('Use ChatGPT / Claude'))),
       const Text('Preview shows project files, not a running game.', style: TextStyle(color: muted, fontSize: 10)),
     ])),
   ]);
