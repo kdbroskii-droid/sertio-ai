@@ -101,11 +101,13 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 
 
 ### Website-based AI sessions (ChatGPT and Claude)
-- Add optional **Open in ChatGPT** and **Open in Claude** actions so users can use the providers' normal websites with their own existing accounts and whatever free/paid limits apply to those accounts.
-- Provide a clear handoff workflow: Nova prepares a self-contained prompt and relevant project context, opens the chosen official website, and lets the user paste/submit it and bring the response back into Nova. Offer copy-to-clipboard and response-import controls.
-- Do not ask Nova users for website passwords, capture session cookies, or store website credentials. Do not silently scrape private chats or rely on undocumented endpoints.
-- Any optional browser companion automation must use a user-visible, user-approved browser session, respect the site's terms and technical restrictions, and fall back to manual handoff when automation is unavailable or blocked.
-- Make clear that website use is not the same as API integration: Nova cannot guarantee automatic end-to-end requests, programmatic responses, or API-style reliability from a normal website session. Website account limits and feature availability still apply.
+- Add optional **ChatGPT first** and **Claude first** modes, plus a **Try the other website** fallback action.
+- Nova prepares a self-contained prompt and relevant project context, opens the selected official website, and provides a copy button. The user submits it in their browser and pastes/imports the answer back into Nova.
+- If the first service is unavailable, reports a usage limit, or gives an unusable response, Nova offers to hand the same task to the other website. Keep the prompt/context so the user doesn't have to rebuild it.
+- Make the handoff state visible: waiting for ChatGPT, waiting for Claude, response imported, or switching provider. Never claim a website response was received until the user imports it.
+- Do not automate scraping or programmatic extraction of private website chats or outputs, collect passwords/cookies, or bypass usage limits. OpenAI's terms prohibit automatically/programmatically extracting data or output and circumventing rate limits; use manual handoff unless the provider explicitly supports a compliant integration.
+- Optional browser automation may only be added where the provider explicitly permits it, is user-visible and approved, and complies with current terms and technical restrictions. Otherwise fall back to manual handoff.
+- Clearly explain that website use is not the same as API integration: automatic end-to-end requests and response capture cannot be guaranteed. Website account limits and feature availability still apply.
 - Keep API providers and local models as separate options; do not present website access as a way to bypass API billing or provider limits.
 
 ## Suggested initial issue order
