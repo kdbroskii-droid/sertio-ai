@@ -214,7 +214,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       const SizedBox(height:16),
       Container(height:270,decoration:BoxDecoration(color:const Color(0xFF0E1118),borderRadius:BorderRadius.circular(18),border:Border.all(color:_line)),child:ClipRRect(borderRadius:BorderRadius.circular(18),child:CustomPaint(painter:_MeshPainter(_mesh),child:const SizedBox.expand()))),
       const SizedBox(height:8),
-      Text('\${_mesh.vertices.length} vertices · \${_mesh.faces.length} faces',textAlign:TextAlign.center,style:const TextStyle(color:_muted,fontSize:12)),
+      Text('\${mesh.vertices.length} vertices · \${mesh.faces.length} faces',textAlign:TextAlign.center,style:const TextStyle(color:_muted,fontSize:12)),
       const SizedBox(height:16),
       TextField(controller:_name,decoration:const InputDecoration(labelText:'Asset name',hintText:'e.g. Crystal Sword')),
       const SizedBox(height:12),
@@ -245,9 +245,9 @@ class _MeshPainter extends CustomPainter {
     final fill=Paint()..style=PaintingStyle.fill;
     final edge=Paint()..style=PaintingStyle.stroke..strokeWidth=1..color=const Color(0xFF9DBDFF).withOpacity(.8);
     final ordered=<MapEntry<double,_Face>>[];
-    for(final f in _mesh.faces){final depth=f.indices.map((i){final v=_mesh.vertices[i];return v.x+v.y*.3+v.z;}).reduce((a,b)=>a+b)/f.indices.length;ordered.add(MapEntry(depth,f));}
+    for(final f in mesh.faces){final depth=f.indices.map((i){final v=mesh.vertices[i];return v.x+v.y*.3+v.z;}).reduce((a,b)=>a+b)/f.indices.length;ordered.add(MapEntry(depth,f));}
     ordered.sort((a,b)=>a.key.compareTo(b.key));
-    for(var i=0;i<ordered.length;i++){final f=ordered[i].value;final path=Path();for(var j=0;j<f.indices.length;j++){final p=project(_mesh.vertices[f.indices[j]]);if(j==0){path.moveTo(p.dx,p.dy);}else{path.lineTo(p.dx,p.dy);}}path.close();fill.color=Color.lerp(const Color(0xFF244D8F),const Color(0xFF80B5FF),(i%5)/5)!;canvas.drawPath(path,fill);canvas.drawPath(path,edge);}
+    for(var i=0;i<ordered.length;i++){final f=ordered[i].value;final path=Path();for(var j=0;j<f.indices.length;j++){final p=project(mesh.vertices[f.indices[j]]);if(j==0){path.moveTo(p.dx,p.dy);}else{path.lineTo(p.dx,p.dy);}}path.close();fill.color=Color.lerp(const Color(0xFF244D8F),const Color(0xFF80B5FF),(i%5)/5)!;canvas.drawPath(path,fill);canvas.drawPath(path,edge);}
   }
   @override bool shouldRepaint(covariant _MeshPainter oldDelegate)=>oldDelegate.mesh!=mesh;
 }
