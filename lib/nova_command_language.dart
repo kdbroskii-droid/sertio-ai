@@ -3,10 +3,9 @@ import 'dart:convert';
 /// Universal command envelope used by Nova for every supported task type.
 ///
 /// The visible prefix selects the execution family:
-/// #  mesh, )  Lua/Luau, *) C++, @ Roblox action, & Unreal, % Unity/C#,
+/// # mesh, ) Lua/Luau, *) C++, @ Roblox, & Unreal, % Unity/C#,
 /// ? explain/research, ! debug/fix, ~ general project action.
-/// The remaining payload is a deterministic, versioned set of numeric fields.
-/// It is not a random identifier and is not intended to contain the whole script.
+/// Numeric fields are deterministic and versioned, not random IDs.
 enum NovaCommandKind {
   mesh('#'),
   lua(')'),
@@ -26,6 +25,19 @@ enum NovaCommandKind {
       if (kind.prefix == prefix) return kind;
     }
     throw FormatException('Unknown Nova command prefix: $prefix');
+  }
+
+  /// Detects an optional user-written prefix at the start of a request.
+  /// C++ must be checked before the one-character prefixes.
+  static ({NovaCommandKind kind, String prompt})? parseRequest(String request) {
+    final trimmed = request.trimLeft();
+    final prefix = trimmed.startsWith('*)'
+        ? '*)'
+        : (trimmed.isNotEmpty && '#)@&%?!~'.contains(trimmed[0])
+            ? trimmed[0]
+            : null);
+    if (prefix == null) return null;
+    return (kind: fromPrefix(prefix), prompt: trimmed.substring(prefix.length).trim());
   }
 }
 
@@ -50,18 +62,17 @@ class NovaCommand {
   final String name;
   final String description;
 
-  /// Format: prefix + V(1) + action(2) + target(2) + options(2) + detail(2) + flags(2).
-  /// The text fields remain metadata; execution is based on validated numeric fields.
+  /// Format: prefix + version(1) + action(2) + target(2) + options(2) + detail(2) + flags(2).
   String encode() {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${kind.prefix}1${two(actionId)}${two(targetId)}${two(optionsId)}${two(detail)}${two(flags)}';
   }
 
   static NovaCommand decode(String code, {String name = '', String description = ''}) {
-    final prefix = code.startsWith('*)') ? '*)' : code.isNotEmpty ? code[0] : '';
+    final prefix = code.startsWith('*)' ? '*)' : code.isNotEmpty ? code[0] : '';
     final kind = NovaCommandKind.fromPrefix(prefix);
     final payload = code.substring(prefix.length);
-    if (!RegExp(r'^1\d{10}$').hasMatch(payload)) {
+    if (!RegExp(r'^1\\d{10}$').hasMatch(payload)) {
       throw const FormatException('Invalid Nova command payload.');
     }
     final result = NovaCommand(
@@ -75,10 +86,8 @@ class NovaCommand {
       description: description,
     );
     if (result.actionId < 1 || result.actionId > 99 ||
-        result.targetId < 0 || result.targetId > 99 ||
-        result.optionsId < 0 || result.optionsId > 99 ||
-        result.detail < 0 || result.detail > 99 ||
-        result.flags < 0 || result.flags > 99) {
+        result.targetId > 99 || result.optionsId > 99 ||
+        result.detail > 99 || result.flags > 99) {
       throw const FormatException('Nova command contains unsupported fields.');
     }
     return result;
@@ -118,6 +127,13 @@ class NovaCommandRegistry {
     'create_mesh': 13,
     'create_script': 14,
     'create_project_action': 15,
+    'generate_tests': 16,
+    'refactor': 17,
+    'document': 18,
+    'analyze': 19,
+    'configure': 20,
+    'build': 21,
+    'run': 22,
   };
 
   static const targets = <String, int>{
@@ -132,6 +148,12 @@ class NovaCommandRegistry {
     'unreal_project': 8,
     'unity_project': 9,
     'general': 10,
+    'flutter_dart': 11,
+    'web_html_css_js': 12,
+    'python': 13,
+    'project_files': 14,
+    'shader': 15,
+    'godot_gdscript': 16,
   };
 
   static int action(String name) => actions[name] ?? actions['create']!;
