@@ -15,7 +15,7 @@ enum NovaCommandKind {
 
   static ({NovaCommandKind kind, String prompt})? parseRequest(String request) {
     final trimmed = request.trimLeft();
-    final prefix = trimmed.startsWith('*)'
+    final prefix = trimmed.startsWith('*)')
         ? '*)'
         : (trimmed.isNotEmpty && '#)@&%?!~'.contains(trimmed[0]) ? trimmed[0] : null);
     if (prefix == null) return null;
@@ -69,7 +69,7 @@ class NovaCommand {
   }
 
   static NovaCommand decode(String code, {String name = '', String description = ''}) {
-    final prefix = code.startsWith('*)' ? '*)' : code.isNotEmpty ? code[0] : '';
+    final prefix = code.startsWith('*)') ? '*)' : code.isNotEmpty ? code[0] : '';
     final kind = NovaCommandKind.fromPrefix(prefix);
     final payload = code.substring(prefix.length);
     if (!RegExp(r'^1\d{10}$').hasMatch(payload)) {
