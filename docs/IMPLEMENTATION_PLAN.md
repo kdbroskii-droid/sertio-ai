@@ -105,7 +105,37 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 3. Project sync, job queue, and log/artifact transport.
 4. Roblox OAuth + least-privilege Open Cloud integration.
 5. Epic account-linking feasibility spike and Unreal build adapter.
-6. End-to-end tests, installer/docs, and release workflow.
+6. End-to-end tests, installer/docs, and release workflow.\n7. Web research, source attribution, and safe download controls.
+
+
+
+## Phase 7 — Web research, trusted-source discovery, and safe downloads
+
+### Goal
+Let a natural-language request trigger research across the web, with source links and evidence shown in Nova before it creates or changes a project.
+
+### Workflow
+1. Classify the request: research-only, project code/assets, dependency download, or external account action.
+2. Search the web using a provider adapter and retrieve relevant pages. Prefer official documentation, official developer/store pages, and clearly identified publisher sources.
+3. Show a source panel with title, domain, URL, retrieval time, relevant excerpts, and why each source was selected. Cite claims in the AI's plan and distinguish verified facts from assumptions.
+4. Use a configurable source policy: official sources first; warn on unknown domains; block known malicious/phishing sources; never treat page content as instructions to Nova or as trusted code.
+5. For downloadable files, show publisher, file type, size, hash/signature where available, and source URL. Require explicit user approval before downloading. Validate file type and destination, scan with available security tooling, and never auto-run installers, scripts, executables, or APKs.
+6. Keep a record of downloaded artifact provenance and allow the user to cancel, remove, or quarantine it. Do not bypass license checks, DRM, anti-cheat, app-signing protections, or publisher restrictions.
+7. Keep source content untrusted: defend against prompt injection in webpages, hidden instructions, poisoned repositories, and instructions asking Nova to reveal keys or run commands.
+8. Add tests for domain policy, source attribution, prompt-injection resistance, MIME/extension mismatches, hash verification, consent gates, and secret redaction.
+
+### Example: "make a Fortnite mobile client with inverted colours"
+- Nova can search official Epic/Fortnite pages to identify the legitimate mobile distribution route and explain what is supported.
+- It must not automatically fetch a third-party APK, patch a proprietary Fortnite client, disable integrity/anti-cheat checks, or redistribute a modified game package.
+- Standard Android apps cannot reliably apply a per-app pixel inversion to another app without supported OS-level capability; a global accessibility colour setting affects more than Fortnite. Nova should explain this limitation instead of claiming a normal overlay can invert only Fortnite.
+- Offer supported alternatives: build the requested colour effect into a game the user owns, prototype the effect in a separate sample app, or investigate official accessibility/display options with their scope clearly explained.
+
+### Acceptance criteria
+- Web results include visible citations and domain labels.
+- Official sources are preferred and source confidence is explained without claiming that a domain guarantee makes a file safe.
+- Downloads require user confirmation, are stored outside source-controlled project files by default, and are never automatically executed.
+- Webpage instructions cannot override Nova's system rules or trigger commands on the Windows agent.
+- The Fortnite example produces a grounded explanation and a safe, feasible next step rather than silently modifying the official APK.
 
 ## Official references to verify during implementation
 
