@@ -87,8 +87,8 @@ $existingFiles
 Prefix meanings: #=mesh/model asset, )=Lua/Luau script, *)=C++ script, @=Roblox project operation, &=Unreal project operation, %=Unity/C# operation, ?=explain/research, !=debug/fix, ~=general project operation.
 Kinds allowed: mesh, lua, cpp, roblox, unreal, unity, explain, debug, project.
 Action IDs: create=1, edit=2, delete=3, explain=4, research=5, debug=6, optimize=7, convert=8, test=9, export=10, import=11, add_feature=12, create_mesh=13, create_script=14, create_project_action=15, generate_tests=16, refactor=17, document=18, analyze=19, configure=20, build=21, run=22.
-Target IDs: none=0, roblox_luau=1, lua=2, cpp=3, unreal_cpp=4, unity_csharp=5, mesh_obj=6, roblox_project=7, unreal_project=8, unity_project=9, general=10.
-If user asks for a shop in a Roblox game, normally plan separate ordered steps such as (1) create the shop model/assets, (2) create the interaction/proximity logic, (3) create the shop UI and client logic, (4) connect purchasing/data safely if requested, (5) validate references and wiring. Do not combine unrelated deliverables into one huge script. Use only steps genuinely needed.
+Target IDs: none=0, roblox_luau=1, lua=2, cpp=3, unreal_cpp=4, unity_csharp=5, mesh_obj=6, roblox_project=7, unreal_project=8, unity_project=9, general=10, flutter_dart=11, web_html_css_js=12, python=13, project_files=14, shader=15, godot_gdscript=16, roblox_model_rbxmx=17, roblox_script=18.
+If user asks for a shop in a Roblox game, normally plan separate ordered steps such as (1) create a Roblox-native .rbxmx shop model (not an OBJ) with named parts, (2) create the interaction/proximity logic, (3) create the shop UI and client logic, (4) connect purchasing/data safely if requested, (5) validate references and wiring. Use a # command for the model asset and ) commands for Luau scripts. Do not combine unrelated deliverables into one huge script. Use only steps genuinely needed.
 A shop should not be only a static model: ensure interaction and UI are planned. Prefer server-authoritative purchase handling, validate prices/items server-side, and never trust client purchase requests.
 For every step provide a specific task and objectively checkable expectedResult. Keep each step small. Order dependencies correctly. Use explicit prefix as the required kind for a single step when the user starts with a prefix; do not override it. For a natural-language multi-part request, select different kinds for different deliverables.
 Use action and target names from the registries. Numeric fields must be integers 0..99. Keep step count to 8 max.
@@ -113,7 +113,7 @@ User request: $userPrompt
       final actionId = NovaCommandRegistry.action(actionName);
       final engine = activeEngine.toLowerCase();
       final inferredTarget = switch (kind) {
-        NovaCommandKind.mesh => 'mesh_obj',
+        NovaCommandKind.mesh => engine == 'roblox' ? 'roblox_model_rbxmx' : 'mesh_obj',
         NovaCommandKind.lua => engine == 'roblox' ? 'roblox_luau' : 'lua',
         NovaCommandKind.cpp => engine.contains('unreal') ? 'unreal_cpp' : 'cpp',
         NovaCommandKind.roblox => 'roblox_project',
