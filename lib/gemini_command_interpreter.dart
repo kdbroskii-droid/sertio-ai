@@ -119,7 +119,7 @@ class GeminiCommandInterpreter {
       features: features,
     );
     return {
-      'command': command.encode(),
+      'command': '#${command.encode()}',
       'object': object,
       'style': style,
       'size': size / 10,
