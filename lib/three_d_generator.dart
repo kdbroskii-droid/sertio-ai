@@ -161,7 +161,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       await prefs.setString('nova_gemini_api_key', key);
       final result = await GeminiCommandInterpreter.interpret(apiKey: key, prompt: _request.text.trim());
       final code = result['command'].toString();
-      final decoded = NovaMeshCommand.decode(code);
+      final decoded = NovaMeshCommand.decode(code.startsWith('#') ? code.substring(1) : code);
       const objects = {1:'Cube',2:'Sphere',3:'Tree',4:'House',5:'Sword',6:'Barrel',7:'Wheel'};
       if (!mounted) return;
       setState(() {
