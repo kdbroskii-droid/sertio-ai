@@ -56,6 +56,25 @@ void main() {
       expect(NovaCommandKind.parseRequest('make a car wheel'), isNull);
     });
 
+    test('Roblox-native model target has a stable ID', () {
+      expect(NovaCommandRegistry.target('roblox_model_rbxmx'), 17);
+      expect(NovaCommandRegistry.target('roblox_script'), 18);
+    });
+
+    test('command encoding rejects fields wider than two digits', () {
+      final command = NovaCommand(
+        kind: NovaCommandKind.mesh,
+        actionId: 100,
+        targetId: 6,
+        optionsId: 0,
+        detail: 0,
+        flags: 0,
+        name: 'bad',
+        description: 'bad',
+      );
+      expect(() => command.encode(), throwsRangeError);
+    });
+
     test('rejects malformed numeric payloads', () {
       expect(() => NovaCommand.decode('#bad'), throwsFormatException);
       expect(() => NovaCommand.decode(')100010000000'), throwsFormatException);
