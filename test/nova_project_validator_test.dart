@@ -48,11 +48,16 @@ void main() {
     });
 
     test('rejects files exceeding per-file and workspace limits', () {
-      final large = 'x' * (NovaProjectValidator.maxFileBytes + 1);
+      final large = List.filled(NovaProjectValidator.maxFileBytes + 1, 'x').join();
       final errors = NovaProjectValidator.validateGeneratedFiles([
         {'path': 'large.txt', 'content': large},
       ]);
       expect(errors.any((e) => e.contains('exceeds 1 MiB')), isTrue);
+      final chunk = List.filled(900 * 1024, 'x').join();
+      final workspaceErrors = NovaProjectValidator.validateGeneratedFiles([
+        for (var i = 0; i < 6; i++) {'path': 'file$i.txt', 'content': chunk},
+      ]);
+      expect(workspaceErrors.any((e) => e.contains('5 MiB total limit')), isTrue);
     });
 
     test('checks existing workspace files too', () {
