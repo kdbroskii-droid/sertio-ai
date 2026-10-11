@@ -62,6 +62,43 @@ class NovaCommand {
   final String name;
   final String description;
 
+  /// Creates a deterministic command locally when a user explicitly types a prefix.
+  /// This path works even when Gemini is not configured.
+  static NovaCommand fromExplicitRequest({
+    required NovaCommandKind kind,
+    required String activeEngine,
+    required String task,
+  }) {
+    final engine = activeEngine.toLowerCase();
+    final target = switch (kind) {
+      NovaCommandKind.mesh => 6,
+      NovaCommandKind.lua => engine == 'roblox' ? 1 : 2,
+      NovaCommandKind.cpp => engine.contains('unreal') ? 4 : 3,
+      NovaCommandKind.roblox => 7,
+      NovaCommandKind.unreal => 8,
+      NovaCommandKind.unity => 9,
+      NovaCommandKind.explain || NovaCommandKind.debug => 10,
+      NovaCommandKind.project => engine == 'roblox' ? 7 : engine.contains('unreal') ? 8 : engine == 'unity' ? 9 : 10,
+    };
+    final action = switch (kind) {
+      NovaCommandKind.mesh => 13,
+      NovaCommandKind.lua || NovaCommandKind.cpp => 14,
+      NovaCommandKind.explain => 4,
+      NovaCommandKind.debug => 6,
+      _ => 15,
+    };
+    return NovaCommand(
+      kind: kind,
+      actionId: action,
+      targetId: target,
+      optionsId: 0,
+      detail: 0,
+      flags: 0,
+      name: task.trim().isEmpty ? 'Nova task' : task.trim(),
+      description: task.trim(),
+    );
+  }
+
   /// Format: prefix + version(1) + action(2) + target(2) + options(2) + detail(2) + flags(2).
   String encode() {
     String two(int n) => n.toString().padLeft(2, '0');
