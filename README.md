@@ -4,7 +4,7 @@ Flutter app for Android and Windows. Includes local-model chat settings, starter
 
 ## Implementation roadmap
 
-The planned next steps for multi-provider AI keys, Roblox and Epic account linking, and a remotely controlled Windows PC with Roblox Studio and Unreal Editor are documented in [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). The work is tracked in [GitHub Issues](https://github.com/kdbroskii-droid/sertio-ai/issues).
+The planned next steps for multi-provider AI keys, Roblox and Epic account linking, a remotely controlled Windows PC with Roblox Studio and Unreal Editor, and web research with cited trusted sources and safe download approvals are documented in [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). The work is tracked in [GitHub Issues](https://github.com/kdbroskii-droid/sertio-ai/issues).
 
 ## Run
 Install Flutter, then run:
