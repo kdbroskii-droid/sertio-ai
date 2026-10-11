@@ -36,6 +36,13 @@ void main() {
       ]);
       expect(errors.any((e) => e.contains('Unsafe relative path')), isTrue);
       expect(errors.any((e) => e.contains('Duplicate file path')), isTrue);
+      expect(
+        NovaProjectValidator.validateGeneratedFiles([
+          {'path': 'Shop.lua', 'content': 'print(1)'},
+          {'path': 'shop.lua', 'content': 'print(2)'},
+        ]).any((e) => e.contains('case-insensitive filesystems')),
+        isTrue,
+      );
     });
 
     test('rejects empty files and malformed Roblox model XML', () {
