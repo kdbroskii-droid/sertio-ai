@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nova_studio_ai/nova_project_validator.dart';
+import 'package:sertio/nova_project_validator.dart';
 
 void main() {
   group('NovaProjectValidator path checks', () {
