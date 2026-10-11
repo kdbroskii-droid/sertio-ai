@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'three_d_generator.dart';
+import 'nova_universal_interpreter.dart';
 
 const blue = Color(0xFF4F8CFF);
 const bg = Color(0xFF0B0D12);
@@ -190,6 +191,27 @@ class _StudioHomeState extends State<StudioHome> {
     prompt.clear();
     setState(() { messages.add(ChatMessage('user', text)); busy = true; });
     try {
+      String commandContext = 'Universal command interpreter unavailable; infer the task from the user request.';
+      final prefs = await SharedPreferences.getInstance();
+      final geminiKey = prefs.getString('nova_gemini_api_key') ?? '';
+      if (geminiKey.isNotEmpty) {
+        try {
+          final command = await NovaUniversalInterpreter.interpret(
+            apiKey: geminiKey,
+            prompt: text,
+            activeEngine: engine,
+          );
+          commandContext = 'Validated Nova universal command: ${command.encode()}\\n'
+              'Prefix meaning: ${command.kind.name}; actionId=${command.actionId}; '
+              'targetId=${command.targetId}; optionsId=${command.optionsId}; '
+              'detail=${command.detail}; flags=${command.flags}; '
+              'task=${command.name}; interpretation=${command.description}. '
+              'Use this command as structured intent, but generate the actual requested content.';
+          if (mounted) setState(() => messages.add(ChatMessage('assistant', 'Nova command: ${command.encode()}  ·  ${command.kind.name}\\n${command.description}')));
+        } catch (e) {
+          commandContext = 'Gemini interpretation failed; infer the task from the request. Details: $e';
+        }
+      }
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
       final contextFiles = p.files.entries.map((e) => '\nFILE: ' + e.key + '\n' + e.value).join('\n');
