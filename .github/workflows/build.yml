@@ -32,7 +32,7 @@ jobs:
           app_gradle = Path("android/app/build.gradle.kts")
           app_text = app_gradle.read_text()
           app_text = re.sub(
-              r"compileSdk\s*=\s*flutter\.compileSdkVersion",
+              r"compileSdk\s*(?:=\s*)?flutter\.compileSdkVersion",
               "compileSdk = 36",
               app_text,
           )
@@ -52,23 +52,33 @@ jobs:
                       continue
                   checked += 1
                   original = gradle.read_text()
+                  # Handle Groovy and Kotlin DSL forms, including "compileSdk 34".
                   patched = re.sub(
-                      r"(compileSdkVersion\s+)(?:flutter\.compileSdkVersion|\d+)",
-                      r"\g<1>36",
+                      r"(compileSdkVersion\s+|compileSdk\s*(?:=\s*)?)(?:flutter\.compileSdkVersion|\d+)",
+                      lambda match: match.group(1) + "36",
                       original,
-                  )
-                  patched = re.sub(
-                      r"(compileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\d+)",
-                      r"\g<1>36",
-                      patched,
                   )
                   if patched != original:
                       gradle.write_text(patched)
                       updated.append(str(gradle))
           print(f"Inspected {checked} Android plugin Gradle files.")
           print("Updated plugin Gradle files:", updated)
-          if not any("file_picker" in path for path in updated):
-              print("WARNING: file_picker Gradle file was not modified by the SDK patch.")
+          picker_gradle = plugin_root / "file_picker-8.3.7" / "android" / "build.gradle"
+          if picker_gradle.exists():
+              picker_text = picker_gradle.read_text()
+              print("file_picker compileSdk lines:", [
+                  line.strip() for line in picker_text.splitlines()
+                  if "compileSdk" in line
+              ])
+              if not any("file_picker-8.3.7/android/build.gradle" in path for path in updated):
+                  # Explicit fallback for file_picker's Groovy Gradle file.
+                  picker_text = re.sub(
+                      r"(compileSdkVersion\s+|compileSdk\s*)(?:flutter\.compileSdkVersion|\d+)",
+                      lambda match: match.group(1) + "36",
+                      picker_text,
+                  )
+                  picker_gradle.write_text(picker_text)
+                  print("Applied explicit file_picker compile SDK fallback.")
           PY
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
