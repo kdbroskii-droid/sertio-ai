@@ -40,7 +40,7 @@ class NovaMeshCommand {
       detail: int.parse(code.substring(7, 9)),
       features: int.parse(code.substring(9, 11)),
     );
-    if (command.objectId < 1 || command.objectId > 6 ||
+    if (command.objectId < 1 || command.objectId > 7 ||
         command.styleId < 1 || command.styleId > 3 ||
         command.size < 5 || command.size > 50 ||
         command.detail < 8 || command.detail > 24 ||
