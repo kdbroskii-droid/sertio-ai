@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'gemini_command_interpreter.dart';
 
 const _blue = Color(0xFF4F8CFF);
 const _panel = Color(0xFF131720);
@@ -61,6 +63,39 @@ class _Mesh {
     faces.add(_Face(List.generate(segments,(i)=>b+segments+i)));
   }
 
+  void wheel(double size, int detail, int features) {
+    final outerRadius = size * .48;
+    final innerRadius = outerRadius * .48;
+    final depth = size * .22;
+    final b = vertices.length;
+    // Outer and inner rings on each side form a tyre with a visible central hub.
+    for (final z in [-depth / 2, depth / 2]) {
+      for (final radius in [outerRadius, innerRadius]) {
+        for (var i = 0; i < detail; i++) {
+          final a = 2 * math.pi * i / detail;
+          vertices.add(_V3(radius * math.cos(a), radius * math.sin(a), z));
+        }
+      }
+    }
+    for (var i = 0; i < detail; i++) {
+      final n = (i + 1) % detail;
+      faces.add(_Face([b + i, b + n, b + detail + n, b + detail + i]));
+      faces.add(_Face([b + detail + i, b + detail + n, b + 3 * detail + n, b + 3 * detail + i]));
+      faces.add(_Face([b + i, b + 2 * detail + i, b + 2 * detail + n, b + n]));
+      faces.add(_Face([b + detail + i, b + detail + n, b + 3 * detail + n, b + 3 * detail + i]));
+    }
+    // A simple hub is deliberately generated as geometry, not a texture.
+    cylinder(innerRadius * .48, depth * 1.15, math.max(8, detail ~/ 2).toInt());
+    if (features > 0) {
+      final spokeCount = math.min(8, math.max(3, detail ~/ 3)).toInt();
+      for (var i = 0; i < spokeCount; i++) {
+        final a = 2 * math.pi * i / spokeCount;
+        box(math.cos(a) * innerRadius * .24, math.sin(a) * innerRadius * .24, 0,
+            innerRadius * .75, innerRadius * .09, depth * 1.22);
+      }
+    }
+  }
+
   void house(double scale) {
     box(0,-.12*scale,0,1.6*scale,1.2*scale,1.3*scale); final b=vertices.length;
     vertices.addAll([_V3(-.95*scale,.48*scale,-.78*scale),_V3(.95*scale,.48*scale,-.78*scale),_V3(0,1.25*scale,-.78*scale),_V3(-.95*scale,.48*scale,.78*scale),_V3(.95*scale,.48*scale,.78*scale),_V3(0,1.25*scale,.78*scale)]);
@@ -73,7 +108,7 @@ class _Mesh {
     else if(type=='Tree'){box(0,-size*.1,0,size*.13,size*.7,size*.13);cone(size*.34,size*.68,detail,cy:size*.28);cone(size*.27,size*.58,detail,cy:size*.57);}
     else if(type=='House'){house(size/2);}
     else if(type=='Sword'){box(0,size*.28,0,size*.12,size*.62,size*.08);box(0,-size*.08,0,size*.42,size*.07,size*.13);box(0,-size*.31,0,size*.11,size*.36,size*.11);box(0,-size*.51,0,size*.19,size*.07,size*.17);}
-    else if(type=='Barrel'){cylinder(size*.32,size*.8,detail);}
+    else if(type=='Barrel'){cylinder(size*.32,size*.8,detail);}\n    else if(type=='Wheel'){wheel(size,detail,1);}
     else box(0,0,0,size,size,size);
   }
 
@@ -98,9 +133,51 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
   String _type='Cube';
   double _size=2, _detail=12;
   _Mesh _mesh=_Mesh();
+  final _request = TextEditingController();
+  final _geminiKey = TextEditingController();
+  String _command = '';
+  String _interpretation = '';
+  bool _interpreting = false;
 
-  @override void initState(){super.initState();_generate();}
-  @override void dispose(){_name.dispose();super.dispose();}
+  @override void initState(){super.initState();_loadGeminiKey();_generate();}
+  @override void dispose(){_name.dispose();_request.dispose();_geminiKey.dispose();super.dispose();}
+
+  Future<void> _loadGeminiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    _geminiKey.text = prefs.getString('nova_gemini_api_key') ?? '';
+  }
+
+  Future<void> _interpretPrompt() async {
+    if (_request.text.trim().isEmpty || _interpreting) return;
+    setState(() => _interpreting = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = _geminiKey.text.trim().isNotEmpty
+          ? _geminiKey.text.trim()
+          : (prefs.getString('nova_gemini_api_key') ?? '');
+      if (key.isEmpty) throw Exception('Enter your Gemini API key below first.');
+      await prefs.setString('nova_gemini_api_key', key);
+      final result = await GeminiCommandInterpreter.interpret(apiKey: key, prompt: _request.text.trim());
+      final code = result['command'].toString();
+      final decoded = NovaMeshCommand.decode(code);
+      const objects = {1:'Cube',2:'Sphere',3:'Tree',4:'House',5:'Sword',6:'Barrel',7:'Wheel'};
+      if (!mounted) return;
+      setState(() {
+        _command = code;
+        _type = objects[decoded.objectId] ?? 'Cube';
+        _size = decoded.size / 10;
+        _detail = decoded.detail.toDouble();
+        _name.text = result['name'].toString();
+        _interpretation = result['description'].toString();
+      });
+      _generate();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gemini interpretation failed: $e')));
+    } finally {
+      if (mounted) setState(() => _interpreting = false);
+    }
+  }
   void _generate(){final m=_Mesh();m.build(_type,_size,_detail.round().clamp(8,24).toInt());setState(()=>_mesh=m);}
 
   Future<void> _export() async {
@@ -118,7 +195,21 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
     return ListView(padding:const EdgeInsets.all(18),children:[
       const Text('3D Generator',style:TextStyle(fontSize:26,fontWeight:FontWeight.w800)),
       const SizedBox(height:6),
-      const Text('Create real mesh geometry and export OBJ models for Blender or your game-engine workflow.',style:TextStyle(color:_muted,height:1.5)),
+      const Text('Describe a model in words. Gemini maps it to a stable numeric command; Nova decodes the command and builds the mesh locally.',style:TextStyle(color:_muted,height:1.5)),
+      const SizedBox(height:16),
+      TextField(controller:_request, minLines:1, maxLines:3, decoration:const InputDecoration(labelText:'Describe a 3D model', hintText:'e.g. make a car wheel')),
+      const SizedBox(height:8),
+      TextField(controller:_geminiKey, obscureText:true, decoration:const InputDecoration(labelText:'Gemini API key', hintText:'Stored in app preferences on this device')),
+      const SizedBox(height:8),
+      FilledButton.icon(onPressed:_interpreting?null:_interpretPrompt, icon:_interpreting?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.translate), label:Text(_interpreting?'Interpreting…':'Interpret prompt with Gemini')),
+      if(_command.isNotEmpty) ...[
+        const SizedBox(height:8),
+        Container(padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:_panel,borderRadius:BorderRadius.circular(12),border:Border.all(color:_line)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('NOVA NUMERIC COMMAND',style:TextStyle(color:_muted,fontSize:10)),
+          SelectableText(_command,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800,color:_blue)),
+          Text('Decoded locally · ${_interpretation}',style:const TextStyle(color:_muted,fontSize:12)),
+        ])),
+      ],
       const SizedBox(height:16),
       Container(height:270,decoration:BoxDecoration(color:const Color(0xFF0E1118),borderRadius:BorderRadius.circular(18),border:Border.all(color:_line)),child:ClipRRect(borderRadius:BorderRadius.circular(18),child:CustomPaint(painter:_MeshPainter(_mesh),child:const SizedBox.expand()))),
       const SizedBox(height:8),
@@ -126,7 +217,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       const SizedBox(height:16),
       TextField(controller:_name,decoration:const InputDecoration(labelText:'Asset name',hintText:'e.g. Crystal Sword')),
       const SizedBox(height:12),
-      DropdownButtonFormField<String>(value:_type,decoration:const InputDecoration(labelText:'Starting shape'),items:const ['Cube','Sphere','Tree','House','Sword','Barrel'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(),onChanged:(v){if(v!=null)setState(()=>_type=v);}),
+      DropdownButtonFormField<String>(value:_type,decoration:const InputDecoration(labelText:'Starting shape'),items:const ['Cube','Sphere','Tree','House','Sword','Barrel','Wheel'].map((s)=>DropdownMenuItem(value:s,child:Text(s))).toList(),onChanged:(v){if(v!=null)setState(()=>_type=v);}),
       const SizedBox(height:14),
       Row(children:[const Expanded(child:Text('Overall size')),Text(_size.toStringAsFixed(1),style:const TextStyle(color:_blue))]),
       Slider(value:_size,min:.5,max:5,divisions:18,onChanged:(v)=>setState(()=>_size=v)),
@@ -139,7 +230,7 @@ class _ThreeDGeneratorPageState extends State<ThreeDGeneratorPage> {
       const SizedBox(height:8),
       OutlinedButton.icon(onPressed:_export,icon:const Icon(Icons.file_download_outlined),label:const Text('Export .OBJ file')),
       const SizedBox(height:14),
-      const Text('Starter generator: these are procedural low-poly meshes, not AI-sculpted assets. Import OBJ into Blender, then export FBX or GLB if needed.',style:TextStyle(color:_muted,fontSize:12,height:1.5)),
+      const Text('Gemini interprets language only. The numeric command uses fixed fields for version, object, style, size, detail and features; Nova builds the mesh locally. The Gemini key is stored in app preferences and is not encrypted by this prototype. Import OBJ into Blender to convert to FBX or GLB.',style:TextStyle(color:_muted,fontSize:12,height:1.5)),
     ]);
   }
 }
