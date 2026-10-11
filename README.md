@@ -1,6 +1,6 @@
 # Nova Studio AI
 
-Flutter app for Android and Windows. Includes local-model chat settings, starter workspaces for Roblox, Unreal Engine and Unity, a procedural low-poly 3D generator with OBJ export, project file previews, undo, ZIP import/export, basic workspace checks and GitHub Actions builds.
+Flutter app for Android and Windows. Includes local-model chat settings, starter workspaces for Roblox, Unreal Engine and Unity, a procedural low-poly 3D generator with OBJ export, a Gemini prompt interpreter that converts text into deterministic numeric mesh commands, project file previews, undo, ZIP import/export, basic workspace checks and GitHub Actions builds.
 
 ## Implementation roadmap
 
@@ -16,6 +16,6 @@ Install Flutter, then run:
 ## Local AI
 Configure an OpenAI-compatible chat completions endpoint, model name and optional API key in Settings. For a local Ollama-compatible server, the endpoint may be http://127.0.0.1:11434/v1/chat/completions. On a physical Android phone, use your PC's LAN address instead of 127.0.0.1 if the model runs on your PC.
 
-The initial engine adapters create starter files; they do not replace the game engines. Real engine playtests, engine-native automation, complete 3D asset generation and multiplayer deployment need additional integrations. The preview shows project files, not a running game.
+The initial engine adapters create starter files; they do not replace the game engines. The 3D generator currently supports procedural low-poly primitives, including a wheel mesh, rather than arbitrary AI-sculpted geometry. Gemini is used only to interpret a prompt into a fixed schema; Nova encodes version, object, style, size, detail and feature fields into an 11-digit command and decodes it locally. The Gemini key is stored in app preferences without encryption in this prototype, so use a restricted key and do not commit it. Real engine playtests, engine-native automation, complete 3D asset generation and multiplayer deployment need additional integrations. The preview shows project files, not a running game.
 
 GitHub Actions uploads an Android APK and Windows release ZIP. Do not commit API keys or passwords.
