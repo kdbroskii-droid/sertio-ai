@@ -1,4 +1,4 @@
-# Nova Studio AI — Remote Build & Account Linking Implementation Plan
+# Sertio — Remote Build & Account Linking Implementation Plan
 
 **Status:** Planning  
 **Repository:** `kdbroskii-droid/sertio-ai`  
@@ -8,9 +8,9 @@
 
 1. Let users configure multiple AI providers and API keys, choose a default model, and switch providers per task.
 2. Link Roblox and Epic Games accounts through official authorization flows.
-3. Pair Nova on Android with a Windows companion agent running on the user's own PC.
+3. Pair Sertio on Android with a Windows companion agent running on the user's own PC.
 4. Use the installed Roblox Studio and Unreal Editor/toolchains on that PC to open, edit, test, and build projects where supported.
-5. Show queued/running/completed jobs, logs, errors, artifacts, cancellation, and retry in Nova.
+5. Show queued/running/completed jobs, logs, errors, artifacts, cancellation, and retry in Sertio.
 6. Make destructive actions and publishing explicit opt-in actions.
 
 ## Current baseline (important)
@@ -49,7 +49,7 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 **Acceptance:** The phone can pair, see PC online/offline status, and request only explicitly supported operations. The agent rejects unknown devices, expired pairing codes, unsafe paths, and unapproved commands.
 
 ### Phase 3 — Project sync and job queue
-- Add per-project workspace mapping and safe file sync between Nova and the Windows agent.
+- Add per-project workspace mapping and safe file sync between Sertio and the Windows agent.
 - Prevent path traversal, writes outside the selected workspace, accidental overwrites, and symlink escapes.
 - Add queued/running/succeeded/failed/cancelled states, timestamps, progress, log streaming, retry, and cancellation.
 - Keep a snapshot/diff before AI or automation writes files; provide review/undo before applying changes.
@@ -102,10 +102,10 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 
 ### Android-app-based AI handoff (ChatGPT and Claude APKs)
 - Support the user's **already-installed official ChatGPT and Claude Android apps** as preferred handoff targets, with **ChatGPT first** / **Claude first** settings and a **Switch to the other AI** action.
-- Nova may help users find the official app listings and research APKMirror/F-Droid results, but must display the publisher, version, signing/hash details when available, and ask for approval before any download. Do not silently download or install APKs.
-- Do not bundle or redistribute ChatGPT/Claude APK binaries inside Nova unless the publisher explicitly grants that right. Treat APKMirror/F-Droid as discovery sources, not automatic proof that a file is safe or that redistribution is allowed.
-- Nova prepares a self-contained prompt and relevant project context, copies it to the clipboard, and opens the chosen official app using supported Android app links/intents where available. If the app cannot be opened, fall back to its official website.
-- The user submits the prompt in ChatGPT/Claude and returns the answer to Nova using paste/share/import. Nova must not claim it received a response until the user brings it back.
+- Sertio may help users find the official app listings and research APKMirror/F-Droid results, but must display the publisher, version, signing/hash details when available, and ask for approval before any download. Do not silently download or install APKs.
+- Do not bundle or redistribute ChatGPT/Claude APK binaries inside Sertio unless the publisher explicitly grants that right. Treat APKMirror/F-Droid as discovery sources, not automatic proof that a file is safe or that redistribution is allowed.
+- Sertio prepares a self-contained prompt and relevant project context, copies it to the clipboard, and opens the chosen official app using supported Android app links/intents where available. If the app cannot be opened, fall back to its official website.
+- The user submits the prompt in ChatGPT/Claude and returns the answer to Sertio using paste/share/import. Sertio must not claim it received a response until the user brings it back.
 - If the first app is unavailable, hits a usage limit, or gives an unusable response, offer to open the other app with the same prepared context.
 - Do not collect passwords/cookies, scrape private chats, programmatically extract website/app outputs, or bypass usage limits. Any deeper integration must use a provider-supported interface and comply with current terms.
 - Clearly explain that APK-based app launching is not direct AI integration: automatic response capture and guaranteed end-to-end switching are not provided by simply possessing an APK. Website/app account limits still apply.
@@ -125,11 +125,11 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 ## Phase 7 — Web research, trusted-source discovery, and safe downloads
 
 ### Goal
-Let a natural-language request trigger research across the web, with source links and evidence shown in Nova before it creates or changes a project.
+Let a natural-language request trigger research across the web, with source links and evidence shown in Sertio before it creates or changes a project.
 
 ### Preferred Android app sources: APKMirror + F-Droid
 - Add first-class search connectors for **APKMirror** (https://www.apkmirror.com/) and **F-Droid** (https://f-droid.org/), and show which source each result came from.
-- Use APKMirror for app-version/archive research where relevant. Its FAQ says uploads are reviewed and signatures are checked against known releases, but Nova must still show the exact publisher, version, variant, permissions when available, and signature/hash details; the domain alone is not a safety guarantee.
+- Use APKMirror for app-version/archive research where relevant. Its FAQ says uploads are reviewed and signatures are checked against known releases, but Sertio must still show the exact publisher, version, variant, permissions when available, and signature/hash details; the domain alone is not a safety guarantee.
 - Use the official F-Droid repository for free/open-source Android apps. Prefer the F-Droid client/repository metadata and signed repository indexes for verification rather than treating an arbitrary download URL or the public search API as proof of authenticity.
 - Let users choose whether APKMirror and/or F-Droid are enabled, but keep official publisher pages and project repositories available as cross-checks. If a requested app is not present, say so rather than silently substituting a similarly named app.
 - Search results are for research and compatibility checks first. Downloads still require a separate approval screen and the safeguards below.
@@ -138,23 +138,23 @@ Let a natural-language request trigger research across the web, with source link
 1. Classify the request: research-only, project code/assets, dependency download, or external account action.
 2. Search the web using a provider adapter and retrieve relevant pages. Prefer official documentation, official developer/store pages, and clearly identified publisher sources.
 3. Show a source panel with title, domain, URL, retrieval time, relevant excerpts, and why each source was selected. Cite claims in the AI's plan and distinguish verified facts from assumptions.
-4. Use a configurable source policy: official sources first; warn on unknown domains; block known malicious/phishing sources; never treat page content as instructions to Nova or as trusted code.
+4. Use a configurable source policy: official sources first; warn on unknown domains; block known malicious/phishing sources; never treat page content as instructions to Sertio or as trusted code.
 5. For downloadable files, show publisher, file type, size, hash/signature where available, and source URL. Require explicit user approval before downloading. Validate file type and destination, scan with available security tooling, and never auto-run installers, scripts, executables, or APKs.
 6. Keep a record of downloaded artifact provenance and allow the user to cancel, remove, or quarantine it. Do not bypass license checks, DRM, anti-cheat, app-signing protections, or publisher restrictions.
-7. Keep source content untrusted: defend against prompt injection in webpages, hidden instructions, poisoned repositories, and instructions asking Nova to reveal keys or run commands.
+7. Keep source content untrusted: defend against prompt injection in webpages, hidden instructions, poisoned repositories, and instructions asking Sertio to reveal keys or run commands.
 8. Add tests for domain policy, source attribution, prompt-injection resistance, MIME/extension mismatches, hash verification, consent gates, and secret redaction.
 
 ### Example: "make a Fortnite mobile client with inverted colours"
-- Nova can search official Epic/Fortnite pages to identify the legitimate mobile distribution route and explain what is supported.
+- Sertio can search official Epic/Fortnite pages to identify the legitimate mobile distribution route and explain what is supported.
 - It must not automatically fetch a third-party APK, patch a proprietary Fortnite client, disable integrity/anti-cheat checks, or redistribute a modified game package.
-- Standard Android apps cannot reliably apply a per-app pixel inversion to another app without supported OS-level capability; a global accessibility colour setting affects more than Fortnite. Nova should explain this limitation instead of claiming a normal overlay can invert only Fortnite.
+- Standard Android apps cannot reliably apply a per-app pixel inversion to another app without supported OS-level capability; a global accessibility colour setting affects more than Fortnite. Sertio should explain this limitation instead of claiming a normal overlay can invert only Fortnite.
 - Offer supported alternatives: build the requested colour effect into a game the user owns, prototype the effect in a separate sample app, or investigate official accessibility/display options with their scope clearly explained.
 
 ### Acceptance criteria
 - Web results include visible citations and domain labels.
 - Official sources are preferred and source confidence is explained without claiming that a domain guarantee makes a file safe.
 - Downloads require user confirmation, are stored outside source-controlled project files by default, and are never automatically executed.
-- Webpage instructions cannot override Nova's system rules or trigger commands on the Windows agent.
+- Webpage instructions cannot override Sertio's system rules or trigger commands on the Windows agent.
 - The Fortnite example produces a grounded explanation and a safe, feasible next step rather than silently modifying the official APK.
 
 ## Official references to verify during implementation
@@ -165,4 +165,4 @@ Let a natural-language request trigger research across the web, with source link
 - Unreal build/package/deploy/run: https://dev.epicgames.com/documentation/en-us/unreal-engine/build-operations-cooking-packaging-deploying-and-running-projects-in-unreal-engine
 - Unreal Automation Tool: https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-automation-tool-overview-for-unreal-engine
 
-Epic account-linking implementation details and requirements must be confirmed against the current Epic developer documentation and the specific services Nova intends to use before implementation.
+Epic account-linking implementation details and requirements must be confirmed against the current Epic developer documentation and the specific services Sertio intends to use before implementation.
