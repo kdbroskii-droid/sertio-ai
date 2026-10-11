@@ -1,5 +1,5 @@
-name: nova_studio_ai
-description: A local-AI game development workspace for Roblox, Unreal Engine and Unity.
+name: sertio
+description: Sertio is an AI-assisted game development workspace for Roblox, Unreal Engine and Unity.
 publish_to: "none"
 version: 0.1.0+1
 
