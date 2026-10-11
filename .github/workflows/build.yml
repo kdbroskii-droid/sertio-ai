@@ -31,33 +31,44 @@ jobs:
 
           app_gradle = Path("android/app/build.gradle.kts")
           app_text = app_gradle.read_text()
-          app_text = app_text.replace(
-              "compileSdk = flutter.compileSdkVersion",
+          app_text = re.sub(
+              r"compileSdk\s*=\s*flutter\.compileSdkVersion",
               "compileSdk = 36",
+              app_text,
+          )
+          app_text = re.sub(
+              r"compileSdkVersion\s+flutter\.compileSdkVersion",
+              "compileSdkVersion 36",
+              app_text,
           )
           app_gradle.write_text(app_text)
 
           plugin_root = Path.home() / ".pub-cache" / "hosted" / "pub.dev"
           updated = []
+          checked = 0
           if plugin_root.exists():
               for gradle in plugin_root.rglob("build.gradle*"):
                   if "android" not in gradle.parts:
                       continue
+                  checked += 1
                   original = gradle.read_text()
                   patched = re.sub(
-                      r"compileSdkVersion\s+34\b",
-                      "compileSdkVersion 36",
+                      r"(compileSdkVersion\s+)(?:flutter\.compileSdkVersion|\d+)",
+                      r"\g<1>36",
                       original,
                   )
                   patched = re.sub(
-                      r"compileSdk\s*=\s*34\b",
-                      "compileSdk = 36",
+                      r"(compileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\d+)",
+                      r"\g<1>36",
                       patched,
                   )
                   if patched != original:
                       gradle.write_text(patched)
                       updated.append(str(gradle))
+          print(f"Inspected {checked} Android plugin Gradle files.")
           print("Updated plugin Gradle files:", updated)
+          if not any("file_picker" in path for path in updated):
+              print("WARNING: file_picker Gradle file was not modified by the SDK patch.")
           PY
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
