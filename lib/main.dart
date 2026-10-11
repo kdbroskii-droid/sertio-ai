@@ -212,10 +212,28 @@ class _StudioHomeState extends State<StudioHome> {
           commandContext = 'Gemini interpretation failed; infer the task from the request. Details: $e';
         }
       }
+      if (geminiKey.isEmpty) {
+        final explicit = NovaCommandKind.parseRequest(text);
+        if (explicit != null) {
+          final command = NovaCommand.fromExplicitRequest(
+            kind: explicit.kind,
+            activeEngine: engine,
+            task: explicit.prompt,
+          );
+          commandContext = 'Locally validated explicit-prefix command: ${command.encode()}\\n'
+              'Prefix meaning: ${command.kind.name}; actionId=${command.actionId}; '
+              'targetId=${command.targetId}; optionsId=0; detail=0; flags=0; '
+              'task=${command.name}. Use this as structured intent and generate the actual requested content.';
+          if (mounted) setState(() => messages.add(ChatMessage(
+            'assistant',
+            'Nova command: ${command.encode()}  ·  ${command.kind.name}\\n${command.description}',
+          )));
+        }
+      }
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
       final contextFiles = p.files.entries.map((e) => '\nFILE: ' + e.key + '\n' + e.value).join('\n');
-      final system = 'You are Nova Studio AI for ' + p.engine + '. Universal command context: ' + commandContext + '. Prefixes: # mesh, ) Lua/Luau, *) C++, @ Roblox action, & Unreal action, % Unity/C#, ? explain/research, ! debug/fix, ~ general project. Treat numeric command fields as stable structured intent, not random numbers. Return ONLY JSON shaped like {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. Use an empty files list if no changes are needed. Never use absolute paths or ../. Use Luau for Roblox, C# for Unity and C++ for Unreal. Do not claim to run builds. Project: ' + p.name + '\nCurrent files:\n' + contextFiles;
+      final system = 'You are Nova Studio AI for ' + p.engine + '. Universal command context: ' + commandContext + '. Prefixes: # mesh, ) Lua/Luau, *) C++, @ Roblox action, & Unreal action, % Unity/C#, ? explain/research, ! debug/fix, ~ general project. Treat numeric command fields as stable structured intent, not random numbers. Route mesh tasks to OBJ assets; Lua/Luau scripts to .lua or .luau; C++ scripts to .cpp or .h; Unity scripts to .cs; Unreal code to appropriate .h/.cpp files; Roblox project actions to Roblox Luau project files. For ? explain/research, answer in message and do not edit files unless requested. For ! debug/fix, inspect the supplied project files and make targeted fixes. For @, &, and %, make changes appropriate to that engine. Return ONLY JSON shaped like {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. Use an empty files list if no changes are needed. Never use absolute paths or ../. Do not claim to run builds. Project: ' + p.name + '\nCurrent files:\n' + contextFiles;
       final response = await http.post(Uri.parse(endpoint), headers: headers, body: jsonEncode({
         'model': model,
         'messages': [
