@@ -25,7 +25,7 @@ class NovaStudioApp extends StatelessWidget {
   const NovaStudioApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Nova Studio AI',
+    title: 'Sertio',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -59,7 +59,7 @@ class StudioHome extends StatefulWidget {
 class _StudioHomeState extends State<StudioHome> {
   final prompt = TextEditingController();
   final messages = <ChatMessage>[
-    ChatMessage('assistant', 'Welcome to Nova Studio AI. Create a project, describe a change, or connect a local AI model in Settings.'),
+    ChatMessage('assistant', 'Welcome to Sertio. Create a project, describe a change, or connect a local AI model in Settings.'),
   ];
   final projects = <GameProject>[];
   final undoStack = <Map<String, String>>[];
@@ -103,7 +103,7 @@ class _StudioHomeState extends State<StudioHome> {
     if (e == 'Roblox') return {
       'README.md': '# $name\nRoblox starter workspace. Add these Luau files in Roblox Studio.',
       'ServerScriptService/GameServer.server.lua': 'local Players = game:GetService("Players")\nPlayers.PlayerAdded:Connect(function(player)\n    print("Welcome, " .. player.Name)\nend)\n',
-      'StarterPlayerScripts/GameClient.client.lua': '-- Client-side game logic goes here.\nprint("Nova Studio ready")\n',
+      'StarterPlayerScripts/GameClient.client.lua': '-- Client-side game logic goes here.\nprint("Sertio ready")\n',
     };
     if (e == 'Unity') return {
       'README.md': '# $name\nUnity starter workspace.',
@@ -195,11 +195,11 @@ class _StudioHomeState extends State<StudioHome> {
         : (messages.where((m) => m.role == 'user').isNotEmpty
             ? messages.where((m) => m.role == 'user').last.text
             : 'Help me improve this game project.');
-    return 'You are helping with a Nova Studio AI game project.\n'
+    return 'You are helping with a Sertio game project.\n'
       'Project: ${p?.name ?? 'Untitled'}\nEngine: ${p?.engine ?? engine}\n'
       'User task: $request\n\n'
       'Current project files:\n${p == null ? '(No project)' : _projectContext(p)}\n\n'
-      'Return ONLY valid JSON in this exact format so Nova can import edits: '
+      'Return ONLY valid JSON in this exact format so Sertio can import edits: '
       '{"message":"short summary","files":[{"path":"relative/path","content":"complete file contents"}]}. '
       'Include only files to create or replace. Use safe relative paths, no ../ or absolute paths. '
       'For Roblox, use Luau and server-side validation. Do not claim you ran the engine.';
@@ -211,9 +211,9 @@ class _StudioHomeState extends State<StudioHome> {
     try {
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) throw Exception('Could not open the app link.');
-      if (mounted) _toast('$provider opened. Nova copied the project prompt — paste it into the chat, then return here and choose Paste reply.');
+      if (mounted) _toast('$provider opened. Sertio copied the project prompt — paste it into the chat, then return here and choose Paste reply.');
     } catch (_) {
-      if (mounted) _toast('Prompt copied. Open $provider manually, paste the prompt, then return to Nova and choose Paste reply.');
+      if (mounted) _toast('Prompt copied. Open $provider manually, paste the prompt, then return to Sertio and choose Paste reply.');
     }
   }
 
@@ -227,7 +227,7 @@ class _StudioHomeState extends State<StudioHome> {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Continue with another AI', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            const Text('Nova copies the task and project context. Submit it in the other AI, then bring its reply back here.', style: TextStyle(color: muted)),
+            const Text('Sertio copies the task and project context. Submit it in the other AI, then bring its reply back here.', style: TextStyle(color: muted)),
             const SizedBox(height: 14),
             Row(children: [
               Expanded(child: FilledButton.icon(onPressed: () { Navigator.pop(sheetContext); _launchExternalAi('ChatGPT'); }, icon: const Icon(Icons.chat_bubble_outline), label: const Text('ChatGPT'))),
@@ -237,7 +237,7 @@ class _StudioHomeState extends State<StudioHome> {
             const SizedBox(height: 8),
             OutlinedButton.icon(onPressed: () { Navigator.pop(sheetContext); _pasteExternalReply(); }, icon: const Icon(Icons.content_paste), label: const Text('Paste reply from clipboard'), style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44))),
             const SizedBox(height: 4),
-            const Text('Manual handoff only — Nova cannot read your private chats automatically.', style: TextStyle(color: muted, fontSize: 11)),
+            const Text('Manual handoff only — Sertio cannot read your private chats automatically.', style: TextStyle(color: muted, fontSize: 11)),
           ]),
         ),
       ),
@@ -276,7 +276,7 @@ class _StudioHomeState extends State<StudioHome> {
               _toast('Imported project-file JSON. Use Undo if needed.');
             } else {
               setState(() => messages.add(ChatMessage('assistant',
-                'Reply added as text only because it was not valid Nova project-file JSON. Ask the AI to return the exact JSON format from the prompt, then paste it again.\n\n$raw')));
+                'Reply added as text only because it was not valid Sertio project-file JSON. Ask the AI to return the exact JSON format from the prompt, then paste it again.\n\n$raw')));
               _toast('Reply added as text; project files were not changed.');
             }
           }, child: const Text('Import reply')),
@@ -327,7 +327,7 @@ class _StudioHomeState extends State<StudioHome> {
         String? acceptedAnswer;
         final attempts = geminiKey.isNotEmpty ? 3 : 1;
         for (var attempt = 1; attempt <= attempts; attempt++) {
-          final system = 'You are Nova Studio AI executing ONE stage only. Project: ' + p.name +
+          final system = 'You are Sertio executing ONE stage only. Project: ' + p.name +
             '. Engine: ' + p.engine + '. Stage ' + (index + 1).toString() + '/' + plan.length.toString() +
             '. Numeric command: ' + step.command.encode() + '. Kind: ' + step.command.kind.name +
             '. Task: ' + step.task + '. Acceptance criteria: ' + step.expectedResult +
@@ -573,7 +573,7 @@ class _StudioHomeState extends State<StudioHome> {
           Container(height: 64, padding: const EdgeInsets.symmetric(horizontal: 18), decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: line))), child: Row(children: [
             if (!wide) const Icon(Icons.auto_awesome, color: blue),
             const SizedBox(width: 8),
-            Text(wide ? page : 'Nova Studio AI', style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(wide ? page : 'Sertio', style: const TextStyle(fontWeight: FontWeight.w800)),
             const Spacer(),
             const Icon(Icons.circle, size: 8, color: Color(0xFF70D6A0)),
             const SizedBox(width: 6),
@@ -590,7 +590,7 @@ class _StudioHomeState extends State<StudioHome> {
   Widget _sidebar() => Container(
     width: 220, color: panel, padding: const EdgeInsets.all(13),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Row(children: [Icon(Icons.auto_awesome, color: blue), SizedBox(width: 8), Text('Nova Studio AI', style: TextStyle(fontWeight: FontWeight.w800))]),
+      const Row(children: [Icon(Icons.auto_awesome, color: blue), SizedBox(width: 8), Text('Sertio', style: TextStyle(fontWeight: FontWeight.w800))]),
       const SizedBox(height: 20),
       _nav(Icons.add, 'New project', _newProject),
       _nav(Icons.code, 'Studio', () => setState(() => page = 'Studio')),
