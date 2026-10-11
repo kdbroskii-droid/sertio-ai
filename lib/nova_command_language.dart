@@ -86,6 +86,13 @@ class NovaCommand {
     return result;
   }
 
+  /// Decodes a space-separated chain. Each token is a distinct ordered task.
+  static List<NovaCommand> decodeChain(String chain) {
+    final tokens = chain.trim().split(RegExp(r'\\s+')).where((token) => token.isNotEmpty);
+    if (tokens.isEmpty) throw const FormatException('Command chain is empty.');
+    return tokens.map((token) => NovaCommand.decode(token)).toList(growable: false);
+  }
+
   Map<String, Object> toJson() => {
     'prefix': kind.prefix, 'kind': kind.name, 'actionId': actionId,
     'targetId': targetId, 'optionsId': optionsId, 'detail': detail,
