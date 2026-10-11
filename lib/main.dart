@@ -186,72 +186,159 @@ class _StudioHomeState extends State<StudioHome> {
   }
 
   Future<void> _send() async {
-    final text = prompt.text.trim();
+    final request = prompt.text.trim();
     final p = project;
-    if (text.isEmpty || p == null || busy) return;
+    if (request.isEmpty || p == null || busy) return;
     prompt.clear();
-    setState(() { messages.add(ChatMessage('user', text)); busy = true; });
+    setState(() { messages.add(ChatMessage('user', request)); busy = true; });
     try {
-      String commandContext = 'Universal command interpreter unavailable; infer the task from the user request.';
       final prefs = await SharedPreferences.getInstance();
       final geminiKey = prefs.getString('nova_gemini_api_key') ?? '';
-      if (geminiKey.isNotEmpty) {
-        try {
-          final command = await NovaUniversalInterpreter.interpret(
-            apiKey: geminiKey,
-            prompt: text,
-            activeEngine: engine,
-          );
-          commandContext = 'Validated Nova universal command: ${command.encode()}\\n'
-              'Prefix meaning: ${command.kind.name}; actionId=${command.actionId}; '
-              'targetId=${command.targetId}; optionsId=${command.optionsId}; '
-              'detail=${command.detail}; flags=${command.flags}; '
-              'task=${command.name}; interpretation=${command.description}. '
-              'Use this command as structured intent, but generate the actual requested content.';
-          if (mounted) setState(() => messages.add(ChatMessage('assistant', 'Nova command: ${command.encode()}  ·  ${command.kind.name}\\n${command.description}')));
-        } catch (e) {
-          commandContext = 'Gemini interpretation failed; infer the task from the request. Details: $e';
-        }
-      }
-      if (geminiKey.isEmpty) {
-        final explicit = NovaCommandKind.parseRequest(text);
-        if (explicit != null) {
-          final command = NovaCommand.fromExplicitRequest(
-            kind: explicit.kind,
-            activeEngine: engine,
-            task: explicit.prompt,
-          );
-          commandContext = 'Locally validated explicit-prefix command: ${command.encode()}\\n'
-              'Prefix meaning: ${command.kind.name}; actionId=${command.actionId}; '
-              'targetId=${command.targetId}; optionsId=0; detail=0; flags=0; '
-              'task=${command.name}. Use this as structured intent and generate the actual requested content.';
-          if (mounted) setState(() => messages.add(ChatMessage(
-            'assistant',
-            'Nova command: ${command.encode()}  ·  ${command.kind.name}\\n${command.description}',
-          )));
-        }
-      }
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
-      final contextFiles = p.files.entries.map((e) => '\nFILE: ' + e.key + '\n' + e.value).join('\n');
-      final system = 'You are Nova Studio AI for ' + p.engine + '. Universal command context: ' + commandContext + '. Prefixes: # mesh, ) Lua/Luau, *) C++, @ Roblox action, & Unreal action, % Unity/C#, ? explain/research, ! debug/fix, ~ general project. Treat numeric command fields as stable structured intent, not random numbers. Route mesh tasks to OBJ assets; Lua/Luau scripts to .lua or .luau; C++ scripts to .cpp or .h; Unity scripts to .cs; Unreal code to appropriate .h/.cpp files; Roblox project actions to Roblox Luau project files. For ? explain/research, answer in message and do not edit files unless requested. For ! debug/fix, inspect the supplied project files and make targeted fixes. For @, &, and %, make changes appropriate to that engine. Return ONLY JSON shaped like {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. Use an empty files list if no changes are needed. Never use absolute paths or ../. Do not claim to run builds. Project: ' + p.name + '\nCurrent files:\n' + contextFiles;
-      final response = await http.post(Uri.parse(endpoint), headers: headers, body: jsonEncode({
-        'model': model,
-        'messages': [
-          {'role': 'system', 'content': system},
-          ...messages.take(12).map((m) => {'role': m.role, 'content': m.text}),
-          {'role': 'user', 'content': text},
-        ],
-        'temperature': 0.2,
-      })).timeout(const Duration(seconds: 90));
-      if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('HTTP ' + response.statusCode.toString() + ': ' + response.body);
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final answer = data['choices']?[0]?['message']?['content']?.toString() ?? '';
-      _applyAnswer(answer);
+      List<NovaPlanStep> plan;
+      if (geminiKey.isNotEmpty) {
+        plan = await NovaUniversalInterpreter.plan(
+          apiKey: geminiKey, prompt: request, activeEngine: p.engine,
+          projectName: p.name, existingFiles: _projectContext(p));
+      } else {
+        final explicit = NovaCommandKind.parseRequest(request);
+        final kind = explicit?.kind ?? _inferLocalKind(request, p.engine);
+        final task = explicit?.prompt ?? request;
+        plan = [NovaPlanStep(
+          command: NovaCommand.fromExplicitRequest(kind: kind, activeEngine: p.engine, task: task),
+          task: task, expectedResult: 'Complete the requested task in the active project.',
+          dependsOnPrevious: false)];
+      }
+      if (mounted) {
+        final lines = plan.asMap().entries.map((e) =>
+          (e.key + 1).toString() + '. ' + e.value.command.encode() + '  ' + e.value.task).join('\n');
+        setState(() => messages.add(ChatMessage('assistant',
+          'Execution plan (' + plan.length.toString() + ' steps):\n' + lines +
+          '\n\nEach step must pass review before the next step begins.')));
+      }
+
+      for (var index = 0; index < plan.length; index++) {
+        final step = plan[index];
+        var accepted = false;
+        var feedback = '';
+        String? acceptedAnswer;
+        final attempts = geminiKey.isNotEmpty ? 3 : 1;
+        for (var attempt = 1; attempt <= attempts; attempt++) {
+          final system = 'You are Nova Studio AI executing ONE stage only. Project: ' + p.name +
+            '. Engine: ' + p.engine + '. Stage ' + (index + 1).toString() + '/' + plan.length.toString() +
+            '. Numeric command: ' + step.command.encode() + '. Kind: ' + step.command.kind.name +
+            '. Task: ' + step.task + '. Acceptance criteria: ' + step.expectedResult +
+            '. Previous review feedback: ' + feedback + '\nExisting project files:\n' + _projectContext(p) +
+            '\nImplement only this stage; keep file paths and instance names consistent with earlier stages. ' +
+            'For Roblox use Luau, validate RemoteEvents server-side, and keep purchases server-authoritative. ' +
+            'Return ONLY valid JSON: {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. ' +
+            'No absolute paths or ../. Do not claim to run builds.';
+          final response = await http.post(Uri.parse(endpoint), headers: headers, body: jsonEncode({
+            'model': model,
+            'messages': [
+              {'role': 'system', 'content': system},
+              {'role': 'user', 'content': 'Complete stage ' + (index + 1).toString() + ': ' + step.task +
+                '\nAcceptance criteria: ' + step.expectedResult},
+            ],
+            'temperature': 0.1,
+          })).timeout(const Duration(seconds: 90));
+          if (response.statusCode < 200 || response.statusCode >= 300) {
+            throw Exception('Local AI HTTP ' + response.statusCode.toString() + ': ' + response.body);
+          }
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final answer = data['choices']?[0]?['message']?['content']?.toString() ?? '';
+          final normalized = _normalizeAiResponse(answer);
+          if (normalized == null) {
+            feedback = 'Invalid JSON. Return a message string and files array with complete file contents and safe relative paths.';
+            continue;
+          }
+          if (geminiKey.isNotEmpty) {
+            final review = await NovaUniversalInterpreter.verify(
+              apiKey: geminiKey, task: step.task, expectedResult: step.expectedResult,
+              generatedResponse: normalized, existingFiles: _projectContext(p), attempt: attempt);
+            if (!review.approved) {
+              feedback = review.feedback;
+              if (mounted) setState(() => messages.add(ChatMessage('assistant',
+                'Review for step ' + (index + 1).toString() + ', attempt ' + attempt.toString() +
+                ': not approved yet.\n' + review.feedback)));
+              continue;
+            }
+          }
+          accepted = true;
+          acceptedAnswer = normalized;
+          break;
+        }
+        if (!accepted || acceptedAnswer == null) {
+          if (mounted) setState(() => messages.add(ChatMessage('assistant',
+            'Stopped at step ' + (index + 1).toString() + ' of ' + plan.length.toString() +
+            ': verification failed. Later steps were not run. Last feedback: ' + feedback)));
+          return;
+        }
+        _applyAnswer(acceptedAnswer);
+        if (mounted) setState(() => messages.add(ChatMessage('assistant',
+          'Verified step ' + (index + 1).toString() + '/' + plan.length.toString() +
+          ': ' + step.task + '\nCommand: ' + step.command.encode())));
+      }
+      if (mounted) setState(() => messages.add(ChatMessage('assistant',
+        'All ' + plan.length.toString() + ' planned steps passed the configured review process.')));
     } catch (e) {
-      if (mounted) setState(() => messages.add(ChatMessage('assistant', 'Could not connect to the local model. Check Settings and confirm the server is running and reachable.\n' + e.toString())));
+      if (mounted) setState(() => messages.add(ChatMessage('assistant',
+        'Could not complete the staged task. Check your local AI endpoint and Gemini key if verification is enabled.\n' + e.toString())));
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  String _projectContext(GameProject p) {
+    const maxChars = 24000;
+    final buffer = StringBuffer();
+    for (final entry in p.files.entries) {
+      final section = '\nFILE: ' + entry.key + '\n' + entry.value + '\n';
+      if (buffer.length + section.length > maxChars) {
+        buffer.writeln('\n[Remaining project files omitted because the context limit was reached.]');
+        break;
+      }
+      buffer.write(section);
+    }
+    return buffer.isEmpty ? '(No project files yet.)' : buffer.toString();
+  }
+
+  NovaCommandKind _inferLocalKind(String request, String activeEngine) {
+    final q = request.toLowerCase();
+    if (q.contains('explain') || q.contains('what is') || q.contains('how does')) return NovaCommandKind.explain;
+    if (q.contains('fix') || q.contains('debug') || q.contains('broken') || q.contains('error')) return NovaCommandKind.debug;
+    if (q.contains('script') || q.contains('code') || q.contains('controller')) {
+      if (q.contains('c++') || q.contains('cpp')) return NovaCommandKind.cpp;
+      return NovaCommandKind.lua;
+    }
+    if (q.contains('model') || q.contains('mesh') || q.contains('wheel') || q.contains('building')) return NovaCommandKind.mesh;
+    return switch (activeEngine.toLowerCase()) {
+      'roblox' => NovaCommandKind.roblox,
+      'unreal' || 'unreal engine' => NovaCommandKind.unreal,
+      'unity' => NovaCommandKind.unity,
+      _ => NovaCommandKind.project,
+    };
+  }
+
+  String? _normalizeAiResponse(String raw) {
+    var value = raw.trim();
+    final fence = String.fromCharCode(96) * 3;
+    if (value.startsWith(fence)) {
+      value = value.replaceFirst(RegExp(r'^\\x60\\x60\\x60(?:json)?\\s*'), '');
+      value = value.replaceFirst(RegExp(r'\\s*\\x60\\x60\\x60$'), '');
+    }
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! Map<String, dynamic> || decoded['message'] is! String || decoded['files'] is! List) return null;
+      for (final item in decoded['files'] as List) {
+        if (item is! Map || item['path'] is! String || item['content'] is! String) return null;
+        final filePath = (item['path'] as String).replaceAll('\\\\', '/');
+        if (!_safePath(filePath)) return null;
+      }
+      return jsonEncode(decoded);
+    } catch (_) {
+      return null;
     }
   }
 
