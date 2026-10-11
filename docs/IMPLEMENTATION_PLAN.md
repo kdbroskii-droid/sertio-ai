@@ -114,6 +114,13 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 ### Goal
 Let a natural-language request trigger research across the web, with source links and evidence shown in Nova before it creates or changes a project.
 
+### Preferred Android app sources: APKMirror + F-Droid
+- Add first-class search connectors for **APKMirror** (https://www.apkmirror.com/) and **F-Droid** (https://f-droid.org/), and show which source each result came from.
+- Use APKMirror for app-version/archive research where relevant. Its FAQ says uploads are reviewed and signatures are checked against known releases, but Nova must still show the exact publisher, version, variant, permissions when available, and signature/hash details; the domain alone is not a safety guarantee.
+- Use the official F-Droid repository for free/open-source Android apps. Prefer the F-Droid client/repository metadata and signed repository indexes for verification rather than treating an arbitrary download URL or the public search API as proof of authenticity.
+- Let users choose whether APKMirror and/or F-Droid are enabled, but keep official publisher pages and project repositories available as cross-checks. If a requested app is not present, say so rather than silently substituting a similarly named app.
+- Search results are for research and compatibility checks first. Downloads still require a separate approval screen and the safeguards below.
+
 ### Workflow
 1. Classify the request: research-only, project code/assets, dependency download, or external account action.
 2. Search the web using a provider adapter and retrieve relevant pages. Prefer official documentation, official developer/store pages, and clearly identified publisher sources.
@@ -139,7 +146,7 @@ Let a natural-language request trigger research across the web, with source link
 
 ## Official references to verify during implementation
 
-- Roblox OAuth 2.0 reference: https://create.roblox.com/docs/cloud/auth/oauth2-reference
+- APKMirror FAQ and security/signature policy: https://www.apkmirror.com/faq/\n- F-Droid documentation and repository verification: https://f-droid.org/docs/ and https://f-droid.org/docs/All_our_APIs/\n- Roblox OAuth 2.0 reference: https://create.roblox.com/docs/cloud/auth/oauth2-reference
 - Roblox OAuth 2.0 overview: https://create.roblox.com/docs/cloud/auth/oauth2-overview
 - Roblox OAuth app registration/scopes: https://create.roblox.com/docs/cloud/auth/oauth2-registration
 - Unreal build/package/deploy/run: https://dev.epicgames.com/documentation/en-us/unreal-engine/build-operations-cooking-packaging-deploying-and-running-projects-in-unreal-engine
