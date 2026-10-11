@@ -100,15 +100,16 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 
 
 
-### Website-based AI sessions (ChatGPT and Claude)
-- Add optional **ChatGPT first** and **Claude first** modes, plus a **Try the other website** fallback action.
-- Nova prepares a self-contained prompt and relevant project context, opens the selected official website, and provides a copy button. The user submits it in their browser and pastes/imports the answer back into Nova.
-- If the first service is unavailable, reports a usage limit, or gives an unusable response, Nova offers to hand the same task to the other website. Keep the prompt/context so the user doesn't have to rebuild it.
-- Make the handoff state visible: waiting for ChatGPT, waiting for Claude, response imported, or switching provider. Never claim a website response was received until the user imports it.
-- Do not automate scraping or programmatic extraction of private website chats or outputs, collect passwords/cookies, or bypass usage limits. OpenAI's terms prohibit automatically/programmatically extracting data or output and circumventing rate limits; use manual handoff unless the provider explicitly supports a compliant integration.
-- Optional browser automation may only be added where the provider explicitly permits it, is user-visible and approved, and complies with current terms and technical restrictions. Otherwise fall back to manual handoff.
-- Clearly explain that website use is not the same as API integration: automatic end-to-end requests and response capture cannot be guaranteed. Website account limits and feature availability still apply.
-- Keep API providers and local models as separate options; do not present website access as a way to bypass API billing or provider limits.
+### Android-app-based AI handoff (ChatGPT and Claude APKs)
+- Support the user's **already-installed official ChatGPT and Claude Android apps** as preferred handoff targets, with **ChatGPT first** / **Claude first** settings and a **Switch to the other AI** action.
+- Nova may help users find the official app listings and research APKMirror/F-Droid results, but must display the publisher, version, signing/hash details when available, and ask for approval before any download. Do not silently download or install APKs.
+- Do not bundle or redistribute ChatGPT/Claude APK binaries inside Nova unless the publisher explicitly grants that right. Treat APKMirror/F-Droid as discovery sources, not automatic proof that a file is safe or that redistribution is allowed.
+- Nova prepares a self-contained prompt and relevant project context, copies it to the clipboard, and opens the chosen official app using supported Android app links/intents where available. If the app cannot be opened, fall back to its official website.
+- The user submits the prompt in ChatGPT/Claude and returns the answer to Nova using paste/share/import. Nova must not claim it received a response until the user brings it back.
+- If the first app is unavailable, hits a usage limit, or gives an unusable response, offer to open the other app with the same prepared context.
+- Do not collect passwords/cookies, scrape private chats, programmatically extract website/app outputs, or bypass usage limits. Any deeper integration must use a provider-supported interface and comply with current terms.
+- Clearly explain that APK-based app launching is not direct AI integration: automatic response capture and guaranteed end-to-end switching are not provided by simply possessing an APK. Website/app account limits still apply.
+- Keep API providers and local models as separate options; do not present the app handoff as a way to bypass API billing or provider limits.
 
 ## Suggested initial issue order
 
