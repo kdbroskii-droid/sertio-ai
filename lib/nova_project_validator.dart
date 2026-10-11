@@ -7,15 +7,15 @@ class NovaProjectValidator {
   static const int maxFileBytes = 1024 * 1024;
   static const int maxWorkspaceBytes = 5 * 1024 * 1024;
 
-  static String normalizePath(String path) => path.replaceAll('\\\\', '/');
+  static String normalizePath(String path) => path.replaceAll('\\', '/');
 
   static bool isSafeRelativePath(String path) {
     final normalized = normalizePath(path).trim();
     if (normalized.isEmpty ||
         normalized.startsWith('/') ||
         normalized.contains(':') ||
-        normalized.contains('\\u0000') ||
-        normalized.contains(RegExp(r'[\\x00-\\x1F\\x7F]'))) {
+        normalized.contains('\u0000') ||
+        normalized.contains(RegExp(r'[\x00-\x1F\x7F]'))) {
       return false;
     }
     final segments = normalized.split('/');
@@ -43,7 +43,7 @@ class NovaProjectValidator {
       final path = normalizePath(item['path'] as String);
       final content = item['content'] as String;
       if (!isSafeRelativePath(path)) {
-        errors.add('Unsafe relative path: ${item['path']}');
+        errors.add('Unsafe relative path: \${item['path']}');
         continue;
       }
       if (!seen.add(path)) errors.add('Duplicate file path: $path');
