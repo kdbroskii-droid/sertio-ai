@@ -401,23 +401,35 @@ class _StudioHomeState extends State<StudioHome> {
 
   Future<void> _import() async {
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip'], withData: true);
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+        withData: true,
+      );
       if (result == null || result.files.isEmpty || result.files.first.bytes == null) return;
       final zip = ZipDecoder().decodeBytes(result.files.first.bytes!);
       final files = <String, String>{};
-      for (final f in zip.files) {
-        if (!f.isFile || !_safePath(f.name)) continue;
-        if (f.content is List<int>) files[f.name] = utf8.decode(f.content as List<int>, allowMalformed: true);
+      for (final file in zip.files) {
+        if (!file.isFile || !_safePath(file.name)) continue;
+        if (file.content is List<int>) {
+          files[file.name] = utf8.decode(file.content as List<int>, allowMalformed: true);
+        }
       }
       if (files.isEmpty) throw Exception('No readable text files found in ZIP.');
       final validationErrors = NovaProjectValidator.validateWorkspace(files);
       if (validationErrors.isNotEmpty) {
         throw Exception('ZIP project validation failed:\n' + validationErrors.join('\n'));
       }
-      final name = result.files.first.name.replaceAll(RegExp(r'\.zip
-      setState(() { projects.insert(0, GameProject(name, engine, files)); selectedFile = files.keys.first; page = 'Studio'; });
+      final name = result.files.first.name.replaceAll(RegExp(r'\.zip$', caseSensitive: false), '');
+      setState(() {
+        projects.insert(0, GameProject(name, engine, files));
+        selectedFile = files.keys.first;
+        page = 'Studio';
+      });
       _toast('Imported text files. Binary assets are not supported yet.');
-    } catch (e) { _toast('Import failed: $e'); }
+    } catch (e) {
+      _toast('Import failed: $e');
+    }
   }
 
   void _addGeneratedAsset(String name, String obj) {
