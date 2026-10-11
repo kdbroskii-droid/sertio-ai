@@ -23,6 +23,7 @@ jobs:
       - name: Add native platform scaffolding
         run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
       - run: flutter pub get
+      - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
