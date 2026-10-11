@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'three_d_generator.dart';
 import 'nova_universal_interpreter.dart';
 import 'nova_command_language.dart';
+import 'nova_project_validator.dart';
 
 const blue = Color(0xFF4F8CFF);
 const bg = Color(0xFF0B0D12);
@@ -179,11 +180,7 @@ class _StudioHomeState extends State<StudioHome> {
     ep.dispose(); mo.dispose(); ky.dispose();
   }
 
-  bool _safePath(String p) {
-    final normalized = p.replaceAll('\\', '/');
-    return normalized.isNotEmpty && !normalized.startsWith('/') && !normalized.contains(':') &&
-      !normalized.split('/').any((part) => part == '..' || part.isEmpty);
-  }
+  bool _safePath(String p) => NovaProjectValidator.isSafeRelativePath(p);
 
   Future<void> _send() async {
     final request = prompt.text.trim();
@@ -331,11 +328,8 @@ class _StudioHomeState extends State<StudioHome> {
     try {
       final decoded = jsonDecode(value);
       if (decoded is! Map<String, dynamic> || decoded['message'] is! String || decoded['files'] is! List) return null;
-      for (final item in decoded['files'] as List) {
-        if (item is! Map || item['path'] is! String || item['content'] is! String) return null;
-        final filePath = (item['path'] as String).replaceAll('\\', '/');
-        if (!_safePath(filePath)) return null;
-      }
+      final validationErrors = NovaProjectValidator.validateGeneratedFiles(decoded['files'] as List);
+      if (validationErrors.isNotEmpty) return null;
       return jsonEncode(decoded);
     } catch (_) {
       return null;
@@ -441,9 +435,19 @@ class _StudioHomeState extends State<StudioHome> {
     if (p == null) return;
     final empty = p.files.entries.where((e) => e.value.trim().isEmpty).map((e) => e.key).toList();
     final todo = p.files.entries.where((e) => e.value.contains('TODO')).map((e) => e.key).toList();
+    final validation = NovaProjectValidator.validateWorkspace(p.files);
     setState(() {
       page = 'Tests';
-      messages.add(ChatMessage('assistant', 'Workspace checks for ' + p.name + '\nFiles inspected: ' + p.files.length.toString() + '\nEmpty files: ' + empty.length.toString() + '\n' + empty.join('\n') + '\nTODO markers: ' + todo.length.toString() + '\n' + todo.join('\n') + '\n\nThese are basic checks, not a game-engine build or playtest.'));
+      messages.add(ChatMessage('assistant',
+        'Workspace checks for ' + p.name +
+        '\nFiles inspected: ' + p.files.length.toString() +
+        '\nStructural validation errors: ' + validation.length.toString() +
+        (validation.isEmpty ? '' : '\n' + validation.join('\n')) +
+        '\nEmpty files: ' + empty.length.toString() +
+        (empty.isEmpty ? '' : '\n' + empty.join('\n')) +
+        '\nTODO markers: ' + todo.length.toString() +
+        (todo.isEmpty ? '' : '\n' + todo.join('\n')) +
+        '\n\nThese checks validate file paths, duplicate names, file sizes and basic Roblox model XML structure. They do not prove Lua syntax or replace a game-engine build or playtest.'));
     });
   }
 
