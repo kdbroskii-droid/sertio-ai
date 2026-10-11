@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nova_studio_ai/nova_command_language.dart';
+import 'package:sertio/nova_command_language.dart';
 
 void main() {
   group('Nova command language', () {
