@@ -40,15 +40,17 @@ jobs:
           plugin_root = Path.home() / ".pub-cache" / "hosted" / "pub.dev"
           updated = []
           if plugin_root.exists():
-              for gradle in plugin_root.glob("*/android/build.gradle*"):
+              for gradle in plugin_root.rglob("build.gradle*"):
+                  if "android" not in gradle.parts:
+                      continue
                   original = gradle.read_text()
                   patched = re.sub(
-                      r"compileSdkVersion\\s+34\\b",
+                      r"compileSdkVersion\s+34\b",
                       "compileSdkVersion 36",
                       original,
                   )
                   patched = re.sub(
-                      r"compileSdk\\s*=\\s*34\\b",
+                      r"compileSdk\s*=\s*34\b",
                       "compileSdk = 36",
                       patched,
                   )
