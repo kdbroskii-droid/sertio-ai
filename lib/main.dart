@@ -326,7 +326,7 @@ class _StudioHomeState extends State<StudioHome> {
     final fence = String.fromCharCode(96) * 3;
     if (value.startsWith(fence)) {
       value = value.replaceFirst(RegExp(r'^\x60\x60\x60(?:json)?\s*'), '');
-      value = value.replaceFirst(RegExp(r'\s*\x60\x60\x60), '');
+      value = value.replaceFirst(RegExp(r'\s*\x60\x60\x60$'), '');
     }
     try {
       final decoded = jsonDecode(value);
