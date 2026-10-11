@@ -689,11 +689,11 @@ class _StudioHomeState extends State<StudioHome> {
       const SizedBox(height: 8),
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Expanded(child: TextField(controller: prompt, minLines: 1, maxLines: 4, onSubmitted: (_) => _send(), decoration: const InputDecoration(hintText: 'Describe a game or change…', filled: true, fillColor: panel))),
-        const SizedBox(width: 7),
-        IconButton.filled(onPressed: busy ? null : _send, icon: const Icon(Icons.arrow_upward), style: IconButton.styleFrom(backgroundColor: blue)),
+        const SizedBox(width: 2),
+        IconButton(onPressed: busy ? null : _showAiHandoff, tooltip: 'ChatGPT / Claude', icon: const Icon(Icons.open_in_new, color: muted)),
+        IconButton.filled(onPressed: busy ? null : _send, tooltip: 'Send to Nova', icon: const Icon(Icons.arrow_upward), style: IconButton.styleFrom(backgroundColor: blue)),
       ]),
       const SizedBox(height: 5),
-      Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : _showAiHandoff, icon: const Icon(Icons.open_in_new, size: 16), label: const Text('Use ChatGPT / Claude'))),
       const Text('Preview shows project files, not a running game.', style: TextStyle(color: muted, fontSize: 10)),
     ])),
   ]);
