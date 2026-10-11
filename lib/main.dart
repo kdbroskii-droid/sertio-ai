@@ -196,9 +196,9 @@ class _StudioHomeState extends State<StudioHome> {
             ? messages.where((m) => m.role == 'user').last.text
             : 'Help me improve this game project.');
     return 'You are helping with a Nova Studio AI game project.\n'
-      'Project: \${p?.name ?? 'Untitled'}\nEngine: \${p?.engine ?? engine}\n'
+      'Project: ${p?.name ?? 'Untitled'}\nEngine: ${p?.engine ?? engine}\n'
       'User task: $request\n\n'
-      'Current project files:\n\${p == null ? '(No project)' : _projectContext(p)}\n\n'
+      'Current project files:\n${p == null ? '(No project)' : _projectContext(p)}\n\n'
       'Return ONLY valid JSON in this exact format so Nova can import edits: '
       '{"message":"short summary","files":[{"path":"relative/path","content":"complete file contents"}]}. '
       'Include only files to create or replace. Use safe relative paths, no ../ or absolute paths. '
@@ -295,7 +295,6 @@ class _StudioHomeState extends State<StudioHome> {
     prompt.clear();
     setState(() { messages.add(ChatMessage('user', request)); busy = true; });
     try {
-      final prefs = await SharedPreferences.getInstance();
       final geminiKey = await NovaAiConfig.getGeminiApiKey();
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
