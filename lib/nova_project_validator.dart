@@ -44,7 +44,7 @@ class NovaProjectValidator {
       final path = normalizePath(item['path'] as String);
       final content = item['content'] as String;
       if (!isSafeRelativePath(path)) {
-        errors.add('Unsafe relative path: \${item['path']}');
+        errors.add('Unsafe relative path: ' + item['path'].toString());
         continue;
       }
       if (!seen.add(path)) errors.add('Duplicate file path: $path');
