@@ -214,7 +214,7 @@ class _StudioHomeState extends State<StudioHome> {
         final lines = plan.asMap().entries.map((e) =>
           (e.key + 1).toString() + '. ' + e.value.command.encode() + '  ' + e.value.task).join('\n');
         setState(() => messages.add(ChatMessage('assistant',
-          'Execution plan (' + plan.length.toString() + ' steps):\n' + lines +
+          'Execution plan (' + plan.length.toString() + ' steps):\nCommand chain: ' + plan.map((step) => step.command.encode()).join(' ') + '\n' + lines +
           '\n\nEach step must pass review before the next step begins.')));
       }
 
