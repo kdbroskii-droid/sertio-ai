@@ -98,6 +98,16 @@ The current Flutter app is a starter: it has one OpenAI-compatible endpoint/mode
 - Treat project files, AI output, and build logs as untrusted input. Use workspace isolation, command allowlists, timeouts, resource limits, and cancellation.
 - Do not claim full engine support until the corresponding adapter has automated tests on a real installation.
 
+
+
+### Website-based AI sessions (ChatGPT and Claude)
+- Add optional **Open in ChatGPT** and **Open in Claude** actions so users can use the providers' normal websites with their own existing accounts and whatever free/paid limits apply to those accounts.
+- Provide a clear handoff workflow: Nova prepares a self-contained prompt and relevant project context, opens the chosen official website, and lets the user paste/submit it and bring the response back into Nova. Offer copy-to-clipboard and response-import controls.
+- Do not ask Nova users for website passwords, capture session cookies, or store website credentials. Do not silently scrape private chats or rely on undocumented endpoints.
+- Any optional browser companion automation must use a user-visible, user-approved browser session, respect the site's terms and technical restrictions, and fall back to manual handoff when automation is unavailable or blocked.
+- Make clear that website use is not the same as API integration: Nova cannot guarantee automatic end-to-end requests, programmatic responses, or API-style reliability from a normal website session. Website account limits and feature availability still apply.
+- Keep API providers and local models as separate options; do not present website access as a way to bypass API billing or provider limits.
+
 ## Suggested initial issue order
 
 1. Multi-provider configuration and secure secret storage.
