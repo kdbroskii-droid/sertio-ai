@@ -108,7 +108,8 @@ class _Mesh {
     else if(type=='Tree'){box(0,-size*.1,0,size*.13,size*.7,size*.13);cone(size*.34,size*.68,detail,cy:size*.28);cone(size*.27,size*.58,detail,cy:size*.57);}
     else if(type=='House'){house(size/2);}
     else if(type=='Sword'){box(0,size*.28,0,size*.12,size*.62,size*.08);box(0,-size*.08,0,size*.42,size*.07,size*.13);box(0,-size*.31,0,size*.11,size*.36,size*.11);box(0,-size*.51,0,size*.19,size*.07,size*.17);}
-    else if(type=='Barrel'){cylinder(size*.32,size*.8,detail);}\n    else if(type=='Wheel'){wheel(size,detail,1);}
+    else if(type=='Barrel'){cylinder(size*.32,size*.8,detail);}
+    else if(type=='Wheel'){wheel(size,detail,1);}
     else box(0,0,0,size,size,size);
   }
 
