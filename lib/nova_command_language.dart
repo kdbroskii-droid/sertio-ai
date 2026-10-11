@@ -106,7 +106,7 @@ class NovaCommandRegistry {
     'none': 0, 'roblox_luau': 1, 'lua': 2, 'cpp': 3, 'unreal_cpp': 4,
     'unity_csharp': 5, 'mesh_obj': 6, 'roblox_project': 7, 'unreal_project': 8,
     'unity_project': 9, 'general': 10, 'flutter_dart': 11, 'web_html_css_js': 12,
-    'python': 13, 'project_files': 14, 'shader': 15, 'godot_gdscript': 16,
+    'python': 13, 'project_files': 14, 'shader': 15, 'godot_gdscript': 16, 'roblox_model_rbxmx': 17, 'roblox_script': 18,
   };
   static int action(String name) => actions[name] ?? actions['create']!;
   static int target(String name) => targets[name] ?? targets['general']!;
