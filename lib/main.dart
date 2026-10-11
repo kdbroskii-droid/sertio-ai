@@ -215,7 +215,7 @@ class _StudioHomeState extends State<StudioHome> {
       final headers = <String, String>{'Content-Type': 'application/json'};
       if (apiKey.isNotEmpty) headers['Authorization'] = 'Bearer $apiKey';
       final contextFiles = p.files.entries.map((e) => '\nFILE: ' + e.key + '\n' + e.value).join('\n');
-      final system = 'You are Nova Studio AI for ' + p.engine + '. Return ONLY JSON shaped like {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. Use an empty files list if no changes are needed. Never use absolute paths or ../. Use Luau for Roblox, C# for Unity and C++ for Unreal. Do not claim to run builds. Project: ' + p.name + '\nCurrent files:\n' + contextFiles;
+      final system = 'You are Nova Studio AI for ' + p.engine + '. Universal command context: ' + commandContext + '. Prefixes: # mesh, ) Lua/Luau, *) C++, @ Roblox action, & Unreal action, % Unity/C#, ? explain/research, ! debug/fix, ~ general project. Treat numeric command fields as stable structured intent, not random numbers. Return ONLY JSON shaped like {"message":"summary","files":[{"path":"relative/path","content":"complete file"}]}. Use an empty files list if no changes are needed. Never use absolute paths or ../. Use Luau for Roblox, C# for Unity and C++ for Unreal. Do not claim to run builds. Project: ' + p.name + '\nCurrent files:\n' + contextFiles;
       final response = await http.post(Uri.parse(endpoint), headers: headers, body: jsonEncode({
         'model': model,
         'messages': [
