@@ -22,6 +22,8 @@ jobs:
           cache: true
       - name: Add native platform scaffolding
         run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
+      - name: Set Android compile SDK for current plugins
+        run: python -c "from pathlib import Path; p=Path('android/app/build.gradle.kts'); s=p.read_text(); p.write_text(s.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36'))"
       - run: flutter pub get
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -44,6 +46,8 @@ jobs:
           cache: true
       - name: Add native platform scaffolding
         run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
+      - name: Set Android compile SDK for current plugins
+        run: python -c "from pathlib import Path; p=Path('android/app/build.gradle.kts'); s=p.read_text(); p.write_text(s.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36'))"
       - run: flutter pub get
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
