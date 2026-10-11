@@ -2,6 +2,10 @@
 
 Flutter app for Android and Windows. Includes local-model chat settings, starter workspaces for Roblox, Unreal Engine and Unity, project file previews, undo, ZIP import/export, basic workspace checks and GitHub Actions builds.
 
+## Implementation roadmap
+
+The planned next steps for multi-provider AI keys, Roblox and Epic account linking, and a remotely controlled Windows PC with Roblox Studio and Unreal Editor are documented in [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). The work is tracked in [GitHub Issues](https://github.com/kdbroskii-droid/sertio-ai/issues).
+
 ## Run
 Install Flutter, then run:
 
