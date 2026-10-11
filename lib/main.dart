@@ -410,6 +410,10 @@ class _StudioHomeState extends State<StudioHome> {
         if (f.content is List<int>) files[f.name] = utf8.decode(f.content as List<int>, allowMalformed: true);
       }
       if (files.isEmpty) throw Exception('No readable text files found in ZIP.');
+      final validationErrors = NovaProjectValidator.validateWorkspace(files);
+      if (validationErrors.isNotEmpty) {
+        throw Exception('ZIP project validation failed:\\n' + validationErrors.join('\\n'));
+      }
       final name = result.files.first.name.replaceAll(RegExp(r'\.zip$', caseSensitive: false), '');
       setState(() { projects.insert(0, GameProject(name, engine, files)); selectedFile = files.keys.first; page = 'Studio'; });
       _toast('Imported text files. Binary assets are not supported yet.');
