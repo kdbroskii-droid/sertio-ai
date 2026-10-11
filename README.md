@@ -1,6 +1,6 @@
 # Nova Studio AI
 
-Flutter app for Android and Windows. Includes local-model chat settings, starter workspaces for Roblox, Unreal Engine and Unity, project file previews, undo, ZIP import/export, basic workspace checks and GitHub Actions builds.
+Flutter app for Android and Windows. Includes local-model chat settings, starter workspaces for Roblox, Unreal Engine and Unity, a procedural low-poly 3D generator with OBJ export, project file previews, undo, ZIP import/export, basic workspace checks and GitHub Actions builds.
 
 ## Implementation roadmap
 
