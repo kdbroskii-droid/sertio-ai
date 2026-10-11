@@ -22,9 +22,41 @@ jobs:
           cache: true
       - name: Add native platform scaffolding
         run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
-      - name: Set Android compile SDK for current plugins
-        run: python -c "from pathlib import Path; p=Path('android/app/build.gradle.kts'); s=p.read_text(); p.write_text(s.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36'))"
       - run: flutter pub get
+      - name: Set Android compile SDK for app and plugins
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          app_gradle = Path("android/app/build.gradle.kts")
+          app_text = app_gradle.read_text()
+          app_text = app_text.replace(
+              "compileSdk = flutter.compileSdkVersion",
+              "compileSdk = 36",
+          )
+          app_gradle.write_text(app_text)
+
+          plugin_root = Path.home() / ".pub-cache" / "hosted" / "pub.dev"
+          updated = []
+          if plugin_root.exists():
+              for gradle in plugin_root.glob("*/android/build.gradle*"):
+                  original = gradle.read_text()
+                  patched = re.sub(
+                      r"compileSdkVersion\\s+34\\b",
+                      "compileSdkVersion 36",
+                      original,
+                  )
+                  patched = re.sub(
+                      r"compileSdk\\s*=\\s*34\\b",
+                      "compileSdk = 36",
+                      patched,
+                  )
+                  if patched != original:
+                      gradle.write_text(patched)
+                      updated.append(str(gradle))
+          print("Updated plugin Gradle files:", updated)
+          PY
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - run: flutter test
@@ -46,8 +78,6 @@ jobs:
           cache: true
       - name: Add native platform scaffolding
         run: flutter create --platforms=android,windows --org ai.novastudio --project-name nova_studio_ai --no-pub .
-      - name: Set Android compile SDK for current plugins
-        run: python -c "from pathlib import Path; p=Path('android/app/build.gradle.kts'); s=p.read_text(); p.write_text(s.replace('compileSdk = flutter.compileSdkVersion', 'compileSdk = 36'))"
       - run: flutter pub get
       - name: Analyze Dart code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
