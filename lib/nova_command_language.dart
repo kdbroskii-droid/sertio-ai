@@ -65,7 +65,7 @@ class NovaCommand {
       if (n < 0 || n > 99) throw RangeError('Nova command fields must be 0..99.');
       return n.toString().padLeft(2, '0');
     }
-    return '\${kind.prefix}1\${two(actionId)}\${two(targetId)}\${two(optionsId)}\${two(detail)}\${two(flags)}';
+    return '${kind.prefix}1${two(actionId)}${two(targetId)}${two(optionsId)}${two(detail)}${two(flags)}';
   }
 
   static NovaCommand decode(String code, {String name = '', String description = ''}) {
