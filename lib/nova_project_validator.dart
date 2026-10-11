@@ -33,6 +33,7 @@ class NovaProjectValidator {
       errors.add('Too many files: maximum is $maxFiles.');
     }
     final seen = <String>{};
+    final seenCaseInsensitive = <String>{};
     var totalBytes = 0;
     for (var i = 0; i < files.length; i++) {
       final item = files[i];
@@ -47,6 +48,9 @@ class NovaProjectValidator {
         continue;
       }
       if (!seen.add(path)) errors.add('Duplicate file path: $path');
+      if (!seenCaseInsensitive.add(path.toLowerCase())) {
+        errors.add('File path conflicts on case-insensitive filesystems: $path');
+      }
       final bytes = utf8.encode(content).length;
       totalBytes += bytes;
       if (bytes > maxFileBytes) errors.add('File exceeds 1 MiB: $path');
